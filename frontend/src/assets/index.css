@@ -1,0 +1,278 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Natural, professional color palette */
+    --background: 0 0% 100%;
+    --foreground: 120 15% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 120 15% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 120 15% 15%;
+    /* Primary: Natural green (dark forest green) */
+    --primary: 120 45% 25%;
+    --primary-foreground: 0 0% 100%;
+    /* Secondary: Earth tone (warm beige/tan) */
+    --secondary: 30 20% 90%;
+    --secondary-foreground: 120 15% 20%;
+    /* Muted: Soft natural gray-green */
+    --muted: 120 10% 95%;
+    --muted-foreground: 120 10% 40%;
+    /* Accent: Lighter natural green */
+    --accent: 120 30% 85%;
+    --accent-foreground: 120 45% 25%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    /* Border: Soft natural gray */
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
+    /* Ring: Natural green accent */
+    --ring: 120 45% 35%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark mode: Clean black like Vercel/Supabase */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 95%;
+    /* Primary: Natural green accent */
+    --primary: 120 40% 50%;
+    --primary-foreground: 0 0% 100%;
+    /* Secondary: Dark neutral */
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 95%;
+    /* Muted: Subtle gray */
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+    /* Accent */
+    --accent: 0 0% 14%;
+    --accent-foreground: 120 40% 50%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 15%;
+    --input: 0 0% 12%;
+    --ring: 120 40% 45%;
+  }
+}
+
+@layer base {
+  html {
+    overflow-x: clip;
+    @apply min-h-full bg-background;
+    /* Reserve the scrollbar gutter so opening a modal (which sets
+       overflow: hidden on html) doesn't shift page content sideways. */
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    @apply min-h-full bg-background text-foreground;
+    /* Avoid overflow-x: hidden here — it breaks position: sticky in WebKit/Blink. */
+  }
+
+  #app {
+    @apply min-h-dvh bg-background;
+  }
+
+  *,
+  ::after,
+  ::before {
+    border-color: hsl(var(--border));
+  }
+
+  /* Lock background scrolling whenever any modal or drawer with a
+     full-viewport backdrop is open. Every modal in the app uses
+     `class="fixed inset-0 ..."` for its backdrop, so this single rule
+     covers all of them without per-component plumbing. */
+  html:has(.fixed.inset-0) {
+    overflow: hidden;
+  }
+}
+
+@layer components {
+  /* Filter/tag pills: green tint in light mode, neutral in dark mode */
+  .product-tag-chip {
+    @apply inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full;
+    @apply bg-primary/10 text-primary;
+  }
+
+  .dark .product-tag-chip {
+    @apply border border-border/80 bg-secondary text-muted-foreground;
+  }
+
+  .product-tag-chip-sm {
+    @apply inline-flex items-center px-1.5 py-0 text-[10px] leading-5 font-medium rounded-full;
+    @apply bg-primary/10 text-primary;
+  }
+
+  .dark .product-tag-chip-sm {
+    @apply border border-border/80 bg-secondary text-muted-foreground;
+  }
+
+  /* Homepage product card hover */
+  .product-card {
+    @apply cursor-pointer overflow-hidden h-full flex flex-col;
+    @apply transition-[transform,box-shadow,border-color,ring-color] duration-300 ease-out;
+  }
+
+  .group:hover .product-card {
+    @apply -translate-y-1.5 shadow-xl shadow-primary/10;
+    @apply border-primary/30 ring-1 ring-primary/20;
+  }
+
+  .product-card-image-wrap {
+    @apply aspect-[3/2] bg-secondary overflow-hidden relative;
+  }
+
+  .product-card-image-wrap::after {
+    content: '';
+    @apply absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-300;
+    background: linear-gradient(
+      to top,
+      hsl(var(--primary) / 0.18) 0%,
+      hsl(var(--primary) / 0.06) 35%,
+      transparent 70%
+    );
+  }
+
+  .group:hover .product-card-image-wrap::after {
+    @apply opacity-100;
+  }
+
+  .product-card-image {
+    @apply w-full h-full object-cover transition-transform duration-500 ease-out;
+  }
+
+  .group:hover .product-card-image {
+    transform: scale(1.08);
+  }
+
+  .product-card-title {
+    @apply font-semibold text-lg mb-1 transition-colors duration-300 ease-out;
+  }
+
+  .group:hover .product-card-title {
+    @apply text-primary;
+  }
+
+  .product-card-price {
+    @apply transition-transform duration-300 ease-out origin-left;
+  }
+
+  .group:hover .product-card-price {
+    @apply scale-105;
+  }
+
+  .auth-shell {
+    @apply relative min-h-screen overflow-hidden bg-background flex items-center justify-center px-4 py-10;
+  }
+
+  .auth-shell::before,
+  .auth-shell::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+
+  .auth-shell::before {
+    top: -12%;
+    left: -8%;
+    width: 420px;
+    height: 420px;
+    background: hsl(var(--primary) / 0.22);
+  }
+
+  .auth-shell::after {
+    bottom: -18%;
+    right: -12%;
+    width: 480px;
+    height: 480px;
+    background: hsl(var(--primary) / 0.12);
+  }
+
+  .auth-panel {
+    @apply rounded-2xl border border-border/60 bg-card/90 backdrop-blur-md p-8;
+    box-shadow:
+      0 25px 50px -12px hsl(var(--primary) / 0.14),
+      0 0 0 1px hsl(var(--primary) / 0.05);
+  }
+
+  .auth-title {
+    @apply text-2xl font-semibold tracking-tight text-foreground;
+  }
+
+  .auth-subtitle {
+    @apply text-sm text-muted-foreground mt-1 mb-6;
+  }
+
+  .auth-field-label {
+    @apply block text-sm font-medium mb-2 text-foreground/90;
+  }
+
+  .auth-link {
+    @apply text-primary font-medium hover:underline underline-offset-4 transition-colors;
+  }
+
+  .auth-footer-text {
+    @apply text-center text-xs text-muted-foreground;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-card,
+    .product-card-image,
+    .product-card-title,
+    .product-card-price,
+    .product-card-image-wrap::after {
+      @apply transition-none;
+    }
+
+    .group:hover .product-card {
+      @apply translate-y-0;
+    }
+
+    .group:hover .product-card-image {
+      transform: none;
+    }
+
+    .group:hover .product-card-price {
+      @apply scale-100;
+    }
+  }
+}
+
+@layer utilities {
+  /* Custom thin scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+/* Google Places autocomplete dropdown — above modals, drawers, checkout overlay */
+.pac-container {
+  z-index: 10000 !important;
+}
