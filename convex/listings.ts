@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { getOrganizationOwner, getUserByEmailDoc, isUserAdmin } from "./helpers";
+import type { Id } from "./_generated/dataModel";
+import { getOrganizationOwner, getUserByEmailDoc, isUserAdmin, canManageOrganization } from "./helpers";
 
 async function attachImages(ctx: any, listing: any) {
   const images = await ctx.db
@@ -29,9 +30,14 @@ async function attachOrgSummary(ctx: any, listing: any) {
   };
 }
 
+function resolveAssetType(listing: any): "MOBILE_HOME" | "TINY_HOUSE" {
+  return listing.assetType === "TINY_HOUSE" ? "TINY_HOUSE" : "MOBILE_HOME";
+}
+
 function passesFilters(listing: any, args: any) {
   if (listing.status !== "APPROVED") return false;
   if (args.listingType && listing.listingType !== args.listingType) return false;
+  if (args.assetType && resolveAssetType(listing) !== args.assetType) return false;
   if (args.state && listing.state !== args.state) return false;
   if (args.minPrice != null && listing.priceCents < args.minPrice) return false;
   if (args.maxPrice != null && listing.priceCents > args.maxPrice) return false;
@@ -44,7 +50,7 @@ function passesFilters(listing: any, args: any) {
   }
   if (args.query) {
     const q = args.query.toLowerCase();
-    const hay = `${listing.title} ${listing.city} ${listing.state} ${listing.zip} ${listing.communityName ?? ""}`.toLowerCase();
+    const hay = `${listing.title} ${listing.city} ${listing.state} ${listing.zip} ${listing.communityName ?? ""} ${listing.manufacturer ?? ""} ${listing.model ?? ""}`.toLowerCase();
     if (!hay.includes(q)) return false;
   }
   return true;
@@ -63,9 +69,124 @@ export const getListingStats = query({
   },
 });
 
+export const getRecentlyClosed = query({
+  args: {
+    limit: v.optional(v.number()),
+    listingType: v.optional(v.union(v.literal("SALE"), v.literal("RENT"))),
+    state: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const sold = await ctx.db
+      .query("listing")
+      .withIndex("by_status", (q) => q.eq("status", "SOLD"))
+      .collect();
+
+    const filtered = sold.filter((l) => {
+      if (args.listingType && l.listingType !== args.listingType) return false;
+      if (args.state && l.state !== args.state.trim().toUpperCase()) return false;
+      return true;
+    });
+
+    const sorted = filtered
+      .sort((a, b) => (b.soldAt ?? b.updatedAt) - (a.soldAt ?? a.updatedAt))
+      .slice(0, args.limit ?? 12);
+
+    const enriched = [];
+    for (const listing of sorted) {
+      const withImages = await attachImages(ctx, listing);
+      enriched.push(await attachOrgSummary(ctx, withImages));
+    }
+    return enriched;
+  },
+});
+
+export const getTrendingThisWeek = query({
+  args: {},
+  handler: async (ctx) => {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const all = await ctx.db.query("listing").collect();
+    const sold = all.filter((l) => l.status === "SOLD");
+    const soldThisWeek = sold.filter((l) => (l.soldAt ?? l.updatedAt) >= weekAgo);
+    const pool = soldThisWeek.length >= 3 ? soldThisWeek : sold;
+
+    const topSales = [...pool]
+      .filter((l) => l.listingType === "SALE")
+      .sort((a, b) => b.priceCents - a.priceCents)
+      .slice(0, 5);
+
+    const topSalesEnriched = [];
+    for (const listing of topSales) {
+      const withImages = await attachImages(ctx, listing);
+      topSalesEnriched.push(await attachOrgSummary(ctx, withImages));
+    }
+
+    const dealerMap = new Map<string, { organizationId: string; count: number; volumeCents: number }>();
+    for (const listing of pool) {
+      const key = listing.organizationId;
+      const cur = dealerMap.get(key) ?? { organizationId: key, count: 0, volumeCents: 0 };
+      cur.count += 1;
+      cur.volumeCents += listing.priceCents;
+      dealerMap.set(key, cur);
+    }
+    const trendingDealers = [];
+    for (const row of [...dealerMap.values()].sort((a, b) => b.count - a.count || b.volumeCents - a.volumeCents).slice(0, 5)) {
+      const org = await ctx.db.get(row.organizationId as Id<"organization">);
+      if (!org || org.type !== "SELLER") continue;
+      trendingDealers.push({
+        organizationId: row.organizationId,
+        name: org.name,
+        count: row.count,
+        volumeCents: row.volumeCents,
+      });
+    }
+
+    const stateMap = new Map<string, number>();
+    for (const listing of pool) {
+      stateMap.set(listing.state, (stateMap.get(listing.state) ?? 0) + 1);
+    }
+    // Also weight active inventory for states with little sold volume
+    if (stateMap.size < 3) {
+      for (const listing of all.filter((l) => l.status === "APPROVED")) {
+        stateMap.set(listing.state, (stateMap.get(listing.state) ?? 0) + 1);
+      }
+    }
+    const trendingStates = [...stateMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([state, count]) => ({ state, count }));
+
+    const factoryMap = new Map<string, number>();
+    for (const listing of pool) {
+      const name = listing.manufacturer?.trim();
+      if (!name) continue;
+      factoryMap.set(name, (factoryMap.get(name) ?? 0) + 1);
+    }
+    if (factoryMap.size < 3) {
+      for (const listing of all.filter((l) => l.status === "APPROVED" || l.status === "SOLD")) {
+        const name = listing.manufacturer?.trim();
+        if (!name) continue;
+        factoryMap.set(name, (factoryMap.get(name) ?? 0) + 1);
+      }
+    }
+    const trendingFactories = [...factoryMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+
+    return {
+      topSales: topSalesEnriched,
+      trendingDealers,
+      trendingStates,
+      trendingFactories,
+    };
+  },
+});
+
+
 export const getPublicListings = query({
   args: {
     listingType: v.optional(v.union(v.literal("SALE"), v.literal("RENT"))),
+    assetType: v.optional(v.union(v.literal("MOBILE_HOME"), v.literal("TINY_HOUSE"))),
     state: v.optional(v.string()),
     minPrice: v.optional(v.number()),
     maxPrice: v.optional(v.number()),
@@ -95,26 +216,52 @@ export const getPublicListings = query({
       const owner = await getOrganizationOwner(ctx, listing.organizationId);
       if (!owner?.isApproved) continue;
       const withImages = await attachImages(ctx, listing);
-      enriched.push(await attachOrgSummary(ctx, withImages));
+      enriched.push({
+        ...(await attachOrgSummary(ctx, withImages)),
+        assetType: resolveAssetType(listing),
+      });
     }
     return enriched;
   },
 });
 
 export const getPublicListing = query({
-  args: { listingId: v.id("listing") },
+  args: {
+    listingId: v.id("listing"),
+    viewerEmail: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const listing = await ctx.db.get(args.listingId);
-    if (!listing || listing.status !== "APPROVED") return null;
+    if (!listing) return null;
+
+    const org = await ctx.db.get(listing.organizationId);
+    if (!org || org.type !== "SELLER") return null;
+
+    const isPublicStatus = listing.status === "APPROVED" || listing.status === "SOLD";
+    let canPreviewPrivate = false;
+    if (args.viewerEmail) {
+      const viewer = await getUserByEmailDoc(ctx, args.viewerEmail);
+      if (viewer) {
+        canPreviewPrivate =
+          (await isUserAdmin(ctx, viewer._id)) ||
+          (await canManageOrganization(ctx, viewer._id, listing.organizationId));
+      }
+    }
+
+    if (!isPublicStatus && !canPreviewPrivate) return null;
+
+    const owner = await getOrganizationOwner(ctx, org._id);
+    // Public visitors still require an approved dealer; admins/managers can preview drafts.
+    if (!canPreviewPrivate && !owner?.isApproved) return null;
+
     const withImages = await attachImages(ctx, listing);
     const withOrg = await attachOrgSummary(ctx, withImages);
-    const org = await ctx.db.get(listing.organizationId);
-    const owner = org ? await getOrganizationOwner(ctx, org._id) : null;
     return {
       ...withOrg,
       organization: org,
-      sellerEmail: owner?.email,
-      sellerPhone: org?.phone,
+      sellerEmail: owner?.email ?? null,
+      sellerPhone: org.phone,
+      previewOnly: !isPublicStatus,
     };
   },
 });
@@ -134,13 +281,13 @@ export const getOrganizationListings = query({
     let canSeePrivate = false;
     if (args.userEmail) {
       const user = await getUserByEmailDoc(ctx, args.userEmail);
-      canSeePrivate =
-        Boolean(user?.isAdmin) ||
-        user?.organizationId === args.organizationId;
+      if (user) {
+        canSeePrivate = await canManageOrganization(ctx, user._id, args.organizationId);
+      }
     }
 
     const visible = listings.filter((l) => {
-      if (l.status === "APPROVED") return true;
+      if (l.status === "APPROVED" || l.status === "SOLD") return true;
       return canSeePrivate && args.includeNonPublic;
     });
 
@@ -177,9 +324,12 @@ export const getPendingListings = query({
 export const createListing = mutation({
   args: {
     userEmail: v.string(),
+    /** Admins may create a listing for another dealer org. */
+    organizationId: v.optional(v.id("organization")),
     title: v.string(),
     description: v.optional(v.string()),
     listingType: v.union(v.literal("SALE"), v.literal("RENT")),
+    assetType: v.optional(v.union(v.literal("MOBILE_HOME"), v.literal("TINY_HOUSE"))),
     priceCents: v.number(),
     lotRentCents: v.optional(v.number()),
     beds: v.optional(v.number()),
@@ -200,18 +350,33 @@ export const createListing = mutation({
   },
   handler: async (ctx, args) => {
     const user = await getUserByEmailDoc(ctx, args.userEmail);
-    if (!user?.organizationId) throw new Error("Seller organization required");
+    if (!user) throw new Error("User not found");
 
-    const org = await ctx.db.get(user.organizationId);
-    if (!org || org.type !== "SELLER") throw new Error("Only sellers can create listings");
+    const isAdmin = await isUserAdmin(ctx, user._id);
+    const organizationId = args.organizationId ?? user.organizationId;
+    if (!organizationId) throw new Error("Dealer organization required");
+
+    if (!isAdmin && user.organizationId !== organizationId) {
+      throw new Error("Unauthorized");
+    }
+
+    const org = await ctx.db.get(organizationId);
+    if (!org || org.type !== "SELLER") {
+      throw new Error("Only dealers can create listings");
+    }
+
+    if (!isAdmin && !user.isApproved) {
+      throw new Error("Dealer account pending approval");
+    }
 
     const now = Date.now();
     const listingId = await ctx.db.insert("listing", {
-      organizationId: user.organizationId,
+      organizationId,
       createdBy: user._id,
       title: args.title.trim(),
       description: args.description?.trim(),
       listingType: args.listingType,
+      assetType: args.assetType ?? "MOBILE_HOME",
       status: "PENDING",
       priceCents: args.priceCents,
       lotRentCents: args.lotRentCents,
@@ -245,6 +410,7 @@ export const updateListing = mutation({
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     listingType: v.optional(v.union(v.literal("SALE"), v.literal("RENT"))),
+    assetType: v.optional(v.union(v.literal("MOBILE_HOME"), v.literal("TINY_HOUSE"))),
     priceCents: v.optional(v.number()),
     lotRentCents: v.optional(v.number()),
     beds: v.optional(v.number()),
@@ -268,6 +434,7 @@ export const updateListing = mutation({
         v.literal("APPROVED"),
         v.literal("REJECTED"),
         v.literal("ARCHIVED"),
+        v.literal("SOLD"),
       ),
     ),
   },
@@ -282,7 +449,7 @@ export const updateListing = mutation({
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
     const fields = [
-      "title", "description", "listingType", "priceCents", "lotRentCents",
+      "title", "description", "listingType", "assetType", "priceCents", "lotRentCents",
       "beds", "baths", "sqft", "yearBuilt", "manufacturer", "model",
       "widthFeet", "lengthFeet", "address1", "city", "state", "zip",
       "lat", "lng", "communityName",
@@ -300,6 +467,9 @@ export const updateListing = mutation({
         throw new Error("Only admins can approve listings");
       }
       patch.status = args.status;
+      if (args.status === "SOLD") {
+        patch.soldAt = Date.now();
+      }
     } else if (!isAdmin && listing.status === "APPROVED") {
       patch.status = "PENDING";
     }
@@ -309,18 +479,55 @@ export const updateListing = mutation({
   },
 });
 
+export const markListingSold = mutation({
+  args: {
+    userEmail: v.string(),
+    listingId: v.id("listing"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUserByEmailDoc(ctx, args.userEmail);
+    const listing = await ctx.db.get(args.listingId);
+    if (!listing) throw new Error("Listing not found");
+
+    const isAdmin = user ? await isUserAdmin(ctx, user._id) : false;
+    const isOwner = user?.organizationId === listing.organizationId;
+    if (!isAdmin && !isOwner) throw new Error("Unauthorized");
+    if (listing.status !== "APPROVED" && listing.status !== "SOLD") {
+      throw new Error("Only live listings can be marked sold");
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(args.listingId, {
+      status: "SOLD",
+      soldAt: now,
+      updatedAt: now,
+    });
+    return args.listingId;
+  },
+});
+
 export const adminUpdateListingStatus = mutation({
   args: {
     adminEmail: v.string(),
     listingId: v.id("listing"),
-    status: v.union(v.literal("APPROVED"), v.literal("REJECTED"), v.literal("ARCHIVED")),
+    status: v.union(
+      v.literal("APPROVED"),
+      v.literal("REJECTED"),
+      v.literal("ARCHIVED"),
+      v.literal("SOLD"),
+    ),
   },
   handler: async (ctx, args) => {
     const admin = await getUserByEmailDoc(ctx, args.adminEmail);
     if (!admin || !(await isUserAdmin(ctx, admin._id))) {
       throw new Error("Unauthorized");
     }
-    await ctx.db.patch(args.listingId, { status: args.status, updatedAt: Date.now() });
+    const patch: Record<string, unknown> = {
+      status: args.status,
+      updatedAt: Date.now(),
+    };
+    if (args.status === "SOLD") patch.soldAt = Date.now();
+    await ctx.db.patch(args.listingId, patch);
     return { success: true };
   },
 });

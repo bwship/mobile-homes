@@ -14,6 +14,8 @@ import type * as favorites from "../favorites.js";
 import type * as files from "../files.js";
 import type * as helpers from "../helpers.js";
 import type * as listings from "../listings.js";
+import type * as messages from "../messages.js";
+import type * as notifications from "../notifications.js";
 import type * as organizations from "../organizations.js";
 import type * as passwords from "../passwords.js";
 import type * as seed from "../seed.js";
@@ -34,6 +36,8 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   helpers: typeof helpers;
   listings: typeof listings;
+  messages: typeof messages;
+  notifications: typeof notifications;
   organizations: typeof organizations;
   passwords: typeof passwords;
   seed: typeof seed;

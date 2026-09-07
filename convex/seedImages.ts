@@ -17,6 +17,10 @@ const EXTERIOR_PHOTOS = [
   `https://images.unsplash.com/photo-1652946337030-b8de81c06235?${IMAGE_PARAMS}`,
   `https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?${IMAGE_PARAMS}`,
   `https://images.unsplash.com/photo-1600585154526-990dced4db0d?${IMAGE_PARAMS}`,
+  // Compact / cabin / modern ADU vibes for tiny homes
+  `https://images.unsplash.com/photo-1518780664697-55e3ad937233?${IMAGE_PARAMS}`,
+  `https://images.unsplash.com/photo-1449844908441-882987f98ffa?${IMAGE_PARAMS}`,
+  `https://images.unsplash.com/photo-1523217582562-09d0def993a6?${IMAGE_PARAMS}`,
 ];
 
 const INTERIOR_PHOTOS = [

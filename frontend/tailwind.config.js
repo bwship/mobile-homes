@@ -9,12 +9,19 @@ export default {
     container: {
       center: true,
       padding: {
-        DEFAULT: '0.5rem',
-        sm: '1rem',
+        DEFAULT: '1rem',
+        sm: '1.25rem',
         lg: '2rem',
+        xl: '2.5rem',
+      },
+      screens: {
+        '2xl': '1280px',
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -48,6 +55,17 @@ export default {
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
+        },
+        sidebar: {
+          DEFAULT: 'hsl(var(--sidebar))',
+          foreground: 'hsl(var(--sidebar-foreground))',
+          border: 'hsl(var(--sidebar-border))',
+          accent: 'hsl(var(--sidebar-accent))',
+          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+        },
+        deal: {
+          DEFAULT: 'hsl(var(--deal))',
+          foreground: 'hsl(var(--deal-foreground))',
         },
       },
       borderRadius: {

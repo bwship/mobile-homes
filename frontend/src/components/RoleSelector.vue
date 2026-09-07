@@ -17,18 +17,19 @@
         <div class="text-sm text-muted-foreground mt-1">{{ role.description }}</div>
       </button>
     </div>
-    <p v-if="modelValue === 'SELLER'" class="text-xs text-muted-foreground mt-2">* Requires approval</p>
+    <p v-if="modelValue === 'SELLER'" class="text-xs text-muted-foreground mt-2">* Requires admin approval</p>
   </div>
 </template>
 
 <script setup lang="ts">
+/** Backend still expects organization.type SELLER/BUYER at signup. */
 type RoleValue = 'SELLER' | 'BUYER'
 
 defineProps<{ modelValue: RoleValue | null }>()
 defineEmits<{ 'update:modelValue': [value: RoleValue] }>()
 
 const roles = [
-  { value: 'SELLER' as const, label: 'Seller', description: 'List mobile homes for sale or rent' },
-  { value: 'BUYER' as const, label: 'Buyer', description: 'Browse homes and save favorites' },
+  { value: 'BUYER' as const, label: 'Customer', description: 'Browse homes and save favorites' },
+  { value: 'SELLER' as const, label: 'Dealer', description: 'List mobile homes for sale or rent' },
 ]
 </script>

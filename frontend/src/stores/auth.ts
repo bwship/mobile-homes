@@ -17,6 +17,15 @@ export const useAuthStore = defineStore('auth', () => {
       const user = await convex.mutation(api.auth.login, { email, password })
       if (!user) throw new Error('Invalid email or password')
       userStore.setUser(user as any)
+      try {
+        await convex.mutation(api.organizations.acceptPendingInvitesForUser, {
+          userEmail: (user as any).email,
+        })
+        const refreshed = await userStore.fetchUserByEmail((user as any).email)
+        if (refreshed) userStore.setUser(refreshed)
+      } catch {
+        // Invite attach is best-effort; login still succeeds.
+      }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
       throw err

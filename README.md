@@ -54,9 +54,10 @@ Sample listings include FL and TX coordinates for map testing.
 | `/` | Homepage hero, stats, featured listings |
 | `/search` | Map + list split view |
 | `/listings/:id` | Listing detail + contact form |
-| `/sellers/:id` | Seller profile & listing management |
+| `/dealers/:id` | Dealer company page & listing management |
 | `/admin/listings` | Approve pending listings |
-| `/admin/users` | Approve pending sellers |
+| `/admin/users` | All users |
+| `/admin/dealers` | Dealer directory |
 | `/favorites` | Saved homes |
 
 ## Deployment
@@ -106,12 +107,14 @@ In the Vercel project settings:
 | Output Directory | `dist` |
 | Install Command | `cd .. && pnpm install` (or `npm install` from repo root) |
 
-**Vercel environment variables** (Production):
+**Vercel environment variables** (Production — required before deploy will succeed):
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_CONVEX_URL` | Yes | Production Convex URL, e.g. `https://your-prod-name.convex.cloud` |
+| `VITE_CONVEX_URL` | **Yes** | Production Convex URL from the dashboard, e.g. `https://confident-ermine-366.convex.cloud` |
 | `VITE_GOOGLE_MAPS_API_KEY` | Yes | Google Maps JavaScript + Places + Geocoding APIs |
+
+Add these under **Vercel → Project → Settings → Environment Variables**, scope **Production**, then **Redeploy**.
 
 `frontend/vercel.json` includes SPA rewrites for Vue Router.
 

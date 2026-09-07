@@ -5,6 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Digits only from a phone-like string. */
+export function phoneDigits(value: string | undefined | null): string {
+  return String(value ?? '').replace(/\D/g, '').slice(0, 10)
+}
+
+/**
+ * US phone display: (555) 010-0100.
+ * Formats partially while typing (e.g. "(555) 0").
+ */
+export function formatPhone(value: string | undefined | null): string {
+  const d = phoneDigits(value)
+  if (!d) return ''
+  if (d.length <= 3) return `(${d}`
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
+}
+
 /** Format cents to dollar string, e.g. 500 → "5", 150 → "1.50". Returns "0" for NaN/undefined/null. */
 export function formatCents(cents: number | undefined | null): string {
   const n = Number(cents) || 0

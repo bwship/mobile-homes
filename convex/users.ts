@@ -170,13 +170,20 @@ export const listAllUsers = query({
     const result = [];
     for (const user of users) {
       const enriched = await enrichUser(ctx, user);
+      let organizationName: string | undefined;
+      if (enriched.organizationId) {
+        const org = await ctx.db.get(enriched.organizationId);
+        organizationName = org?.name;
+      }
       result.push({
         _id: enriched._id,
         email: enriched.email,
         name: enriched.name,
+        imageUrl: enriched.imageUrl,
         role: enriched.role,
         isApproved: enriched.isApproved,
         organizationId: enriched.organizationId,
+        organizationName,
         createdAt: enriched.createdAt,
       });
     }
@@ -206,6 +213,8 @@ export const updateProfile = mutation({
     name: v.optional(v.string()),
     phone: v.optional(v.string()),
     theme: v.optional(v.union(v.literal("light"), v.literal("dark"), v.literal("system"))),
+    imageStorageId: v.optional(v.id("_storage")),
+    clearImage: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const user = await getUserByEmailDoc(ctx, args.userEmail);
@@ -214,6 +223,14 @@ export const updateProfile = mutation({
     if (args.name !== undefined) patch.name = args.name.trim();
     if (args.phone !== undefined) patch.phone = args.phone.trim() || undefined;
     if (args.theme !== undefined) patch.theme = args.theme;
+    if (args.imageStorageId !== undefined) {
+      patch.imageStorageId = args.imageStorageId;
+      patch.imageUrl = undefined;
+    }
+    if (args.clearImage) {
+      patch.imageStorageId = undefined;
+      patch.imageUrl = undefined;
+    }
     if (Object.keys(patch).length) await ctx.db.patch(user._id, patch);
     const updated = await ctx.db.get(user._id);
     return enrichUser(ctx, updated);

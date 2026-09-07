@@ -1,9 +1,9 @@
 <template>
-  <div>
-    <h1 class="text-3xl font-bold mb-2">Pending listings</h1>
-    <p class="text-muted-foreground mb-8">Review and approve seller submissions.</p>
+  <div class="container py-6 md:py-8">
+    <h1 class="mb-2 text-3xl font-bold">Pending listings</h1>
+    <p class="text-muted-foreground mb-8">Review and approve dealer submissions.</p>
 
-    <div v-if="!userStore.isAdmin" class="text-destructive">Admin access required.</div>
+    <div v-if="!userStore.canAccessAdmin" class="text-destructive">Admin access required.</div>
     <div v-else-if="loading" class="text-muted-foreground">Loading…</div>
     <div v-else-if="listings.length === 0" class="text-muted-foreground">No pending listings.</div>
     <div v-else class="space-y-4">
@@ -42,16 +42,16 @@ const listings = ref<any[]>([])
 const loading = ref(true)
 
 async function load() {
-  if (!userStore.user?.email) return
+  if (!userStore.adminApiEmail) return
   listings.value = (await convex.query(api.listings.getPendingListings, {
-    adminEmail: userStore.user.email,
+    adminEmail: userStore.adminApiEmail,
   })) as any[]
 }
 
 async function setStatus(listingId: string, status: 'APPROVED' | 'REJECTED') {
-  if (!userStore.user?.email) return
+  if (!userStore.adminApiEmail) return
   await convex.mutation(api.listings.adminUpdateListingStatus, {
-    adminEmail: userStore.user.email,
+    adminEmail: userStore.adminApiEmail,
     listingId: listingId as any,
     status,
   })

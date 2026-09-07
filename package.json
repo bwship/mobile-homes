@@ -11,12 +11,16 @@
     "frontend:build": "cd frontend && npm run build",
     "deploy:convex": "convex deploy",
     "seed": "npx convex run seed:seedDemo",
+    "seed:bob": "npx convex run seed:seedBobAccounts",
     "seed:listings": "npx convex run seed:seedListings",
-    "seed:images": "npx convex run seedImages:seedListingImages"
+    "seed:tiny": "npx convex run seed:seedListings",
+    "seed:images": "npx convex run seedImages:seedListingImages",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "convex": "^1.32.0"
+    "convex": "^1.32.0",
+    "husky": "^9.1.7"
   },
   "dependencies": {
     "resend": "^6.9.2"

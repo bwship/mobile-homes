@@ -4,79 +4,105 @@
 
 @layer base {
   :root {
-    /* Natural, professional color palette */
-    --background: 0 0% 100%;
-    --foreground: 120 15% 15%;
+    --background: 220 20% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 120 15% 15%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 120 15% 15%;
-    /* Primary: Natural green (dark forest green) */
-    --primary: 120 45% 25%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 243 75% 52%;
     --primary-foreground: 0 0% 100%;
-    /* Secondary: Earth tone (warm beige/tan) */
-    --secondary: 30 20% 90%;
-    --secondary-foreground: 120 15% 20%;
-    /* Muted: Soft natural gray-green */
-    --muted: 120 10% 95%;
-    --muted-foreground: 120 10% 40%;
-    /* Accent: Lighter natural green */
-    --accent: 120 30% 85%;
-    --accent-foreground: 120 45% 25%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 243 75% 96%;
+    --accent-foreground: 243 75% 40%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    /* Border: Soft natural gray */
-    --border: 0 0% 85%;
-    --input: 0 0% 85%;
-    /* Ring: Natural green accent */
-    --ring: 120 45% 35%;
-    --radius: 0.5rem;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 243 75% 52%;
+    --radius: 0.75rem;
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-accent: 243 75% 96%;
+    --sidebar-accent-foreground: 243 75% 40%;
+    --deal: 84 100% 45%;
+    --deal-foreground: 0 0% 0%;
   }
 
   .dark {
-    /* Dark mode: Clean black like Vercel/Supabase */
-    --background: 0 0% 4%;
-    --foreground: 0 0% 95%;
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 95%;
-    /* Primary: Natural green accent */
-    --primary: 120 40% 50%;
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
-    /* Secondary: Dark neutral */
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 95%;
-    /* Muted: Subtle gray */
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 60%;
-    /* Accent */
-    --accent: 0 0% 14%;
-    --accent-foreground: 120 40% 50%;
+    --secondary: 217 33% 14%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 12%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 243 50% 18%;
+    --accent-foreground: 239 84% 75%;
     --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 15%;
-    --input: 0 0% 12%;
-    --ring: 120 40% 45%;
+    --border: 217 33% 17%;
+    --input: 217 33% 14%;
+    --ring: 239 84% 67%;
+    --sidebar: 222 47% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-accent: 243 50% 18%;
+    --sidebar-accent-foreground: 239 84% 75%;
+    --deal: 84 100% 55%;
+    --deal-foreground: 0 0% 0%;
   }
 }
 
 @layer base {
   html {
     overflow-x: clip;
-    @apply min-h-full bg-background;
-    /* Reserve the scrollbar gutter so opening a modal (which sets
-       overflow: hidden on html) doesn't shift page content sideways. */
-    scrollbar-gutter: stable;
+    @apply min-h-full bg-background antialiased;
   }
 
   body {
-    @apply min-h-full bg-background text-foreground;
-    /* Avoid overflow-x: hidden here — it breaks position: sticky in WebKit/Blink. */
+    @apply min-h-full bg-background text-foreground font-sans;
   }
 
   #app {
     @apply min-h-dvh bg-background;
+  }
+
+  /* Thin, low-contrast scrollbars (Firefox + Chromium). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.28) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.28);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.45);
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
 
   *,
@@ -85,87 +111,155 @@
     border-color: hsl(var(--border));
   }
 
-  /* Lock background scrolling whenever any modal or drawer with a
-     full-viewport backdrop is open. Every modal in the app uses
-     `class="fixed inset-0 ..."` for its backdrop, so this single rule
-     covers all of them without per-component plumbing. */
   html:has(.fixed.inset-0) {
     overflow: hidden;
   }
 }
 
 @layer components {
-  /* Filter/tag pills: green tint in light mode, neutral in dark mode */
-  .product-tag-chip {
-    @apply inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full;
-    @apply bg-primary/10 text-primary;
+  .hero-headline {
+    @apply text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05];
   }
 
-  .dark .product-tag-chip {
-    @apply border border-border/80 bg-secondary text-muted-foreground;
+  .hero-accent {
+    color: hsl(var(--primary));
   }
 
-  .product-tag-chip-sm {
-    @apply inline-flex items-center px-1.5 py-0 text-[10px] leading-5 font-medium rounded-full;
-    @apply bg-primary/10 text-primary;
+  .hero-fold {
+    @apply relative overflow-hidden border-b border-white/10;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, hsl(var(--primary) / 0.22), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 80% 80%, hsl(243 75% 52% / 0.12), transparent 50%),
+      #050505;
   }
 
-  .dark .product-tag-chip-sm {
-    @apply border border-border/80 bg-secondary text-muted-foreground;
+  .hero-cta-primary {
+    @apply inline-flex h-11 items-center justify-center rounded-full px-6 text-sm font-bold transition-all hover:brightness-110;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    box-shadow: 0 0 24px hsl(var(--primary) / 0.4);
   }
 
-  /* Homepage product card hover */
-  .product-card {
-    @apply cursor-pointer overflow-hidden h-full flex flex-col;
-    @apply transition-[transform,box-shadow,border-color,ring-color] duration-300 ease-out;
+  .hero-cta-secondary {
+    @apply inline-flex h-11 items-center justify-center rounded-full border border-white/25 bg-transparent px-6 text-sm font-bold text-white transition-colors hover:border-white/50 hover:bg-white/5;
   }
 
-  .group:hover .product-card {
-    @apply -translate-y-1.5 shadow-xl shadow-primary/10;
-    @apply border-primary/30 ring-1 ring-primary/20;
-  }
-
-  .product-card-image-wrap {
-    @apply aspect-[3/2] bg-secondary overflow-hidden relative;
-  }
-
-  .product-card-image-wrap::after {
-    content: '';
-    @apply absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-300;
+  .hero-search-shell {
+    @apply relative mx-auto w-full max-w-2xl rounded-full p-[1.5px];
     background: linear-gradient(
-      to top,
-      hsl(var(--primary) / 0.18) 0%,
-      hsl(var(--primary) / 0.06) 35%,
-      transparent 70%
+      105deg,
+      hsl(var(--primary)),
+      hsl(280 70% 60%),
+      hsl(199 89% 55%),
+      hsl(var(--primary))
     );
+    background-size: 200% 200%;
+    animation: hero-glow-shift 6s ease infinite;
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.25),
+      0 0 28px hsl(var(--primary) / 0.3),
+      0 0 48px hsl(243 75% 52% / 0.2);
   }
 
-  .group:hover .product-card-image-wrap::after {
-    @apply opacity-100;
+  .hero-search-inner {
+    @apply flex items-center gap-2 rounded-full bg-[#0a0a0a] pl-5 pr-1.5 py-1.5;
   }
 
-  .product-card-image {
-    @apply w-full h-full object-cover transition-transform duration-500 ease-out;
+  .hero-search-btn {
+    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-105;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    box-shadow: 0 0 18px hsl(var(--primary) / 0.5);
   }
 
-  .group:hover .product-card-image {
-    transform: scale(1.08);
+  .hero-logo-rail {
+    @apply border-t border-white/10 bg-white/[0.03];
   }
 
-  .product-card-title {
-    @apply font-semibold text-lg mb-1 transition-colors duration-300 ease-out;
+  .hero-marquee-mask {
+    mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
   }
 
-  .group:hover .product-card-title {
-    @apply text-primary;
+  .hero-marquee-track {
+    animation: hero-marquee 40s linear infinite;
   }
 
-  .product-card-price {
-    @apply transition-transform duration-300 ease-out origin-left;
+  .hero-marquee-paused {
+    animation-play-state: paused;
   }
 
-  .group:hover .product-card-price {
-    @apply scale-105;
+  .hero-logo-item {
+    @apply shrink-0 px-8 text-sm font-semibold tracking-wide text-white/40 whitespace-nowrap sm:px-10 sm:text-base;
+  }
+
+  @keyframes hero-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes hero-glow-shift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .stat-pill {
+    @apply inline-flex items-center gap-2 rounded-full border border-border/60 bg-card px-4 py-2 text-sm font-semibold shadow-sm;
+  }
+
+  .market-chip {
+    @apply inline-flex shrink-0 items-center rounded-full border border-border/60 bg-card px-4 py-2 text-sm font-semibold transition-colors hover:border-primary/40 hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .carousel-card {
+    @apply h-full min-h-[340px];
+  }
+
+  .skeleton-shimmer {
+    @apply animate-pulse;
+    width: 82vw;
+    max-width: 320px;
+    min-height: 340px;
+  }
+
+  .feature-tile {
+    @apply rounded-2xl border border-border/60 bg-card p-6 transition-all hover:border-primary/30 hover:shadow-md;
+  }
+
+  .trending-icon {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg;
+  }
+
+  .trending-icon-sales {
+    color: hsl(var(--deal));
+    background: hsl(var(--deal) / 0.12);
+    box-shadow: 0 0 0 1px hsl(var(--deal) / 0.25), 0 0 18px hsl(var(--deal) / 0.35);
+  }
+
+  .trending-icon-dealers {
+    color: hsl(199 89% 48%);
+    background: hsl(199 89% 48% / 0.12);
+    box-shadow: 0 0 0 1px hsl(199 89% 48% / 0.25), 0 0 18px hsl(199 89% 48% / 0.35);
+  }
+
+  .trending-icon-states {
+    color: hsl(172 66% 45%);
+    background: hsl(172 66% 45% / 0.12);
+    box-shadow: 0 0 0 1px hsl(172 66% 45% / 0.25), 0 0 18px hsl(172 66% 45% / 0.3);
+  }
+
+  .trending-icon-factories {
+    color: hsl(25 95% 53%);
+    background: hsl(25 95% 53% / 0.12);
+    box-shadow: 0 0 0 1px hsl(25 95% 53% / 0.25), 0 0 18px hsl(25 95% 53% / 0.3);
   }
 
   .auth-shell {
@@ -186,7 +280,7 @@
     left: -8%;
     width: 420px;
     height: 420px;
-    background: hsl(var(--primary) / 0.22);
+    background: hsl(var(--primary) / 0.18);
   }
 
   .auth-shell::after {
@@ -194,13 +288,13 @@
     right: -12%;
     width: 480px;
     height: 480px;
-    background: hsl(var(--primary) / 0.12);
+    background: hsl(var(--primary) / 0.1);
   }
 
   .auth-panel {
     @apply rounded-2xl border border-border/60 bg-card/90 backdrop-blur-md p-8;
     box-shadow:
-      0 25px 50px -12px hsl(var(--primary) / 0.14),
+      0 25px 50px -12px hsl(var(--primary) / 0.12),
       0 0 0 1px hsl(var(--primary) / 0.05);
   }
 
@@ -223,56 +317,46 @@
   .auth-footer-text {
     @apply text-center text-xs text-muted-foreground;
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .product-card,
-    .product-card-image,
-    .product-card-title,
-    .product-card-price,
-    .product-card-image-wrap::after {
-      @apply transition-none;
-    }
-
-    .group:hover .product-card {
-      @apply translate-y-0;
-    }
-
-    .group:hover .product-card-image {
-      transform: none;
-    }
-
-    .group:hover .product-card-price {
-      @apply scale-100;
-    }
-  }
 }
 
 @layer utilities {
-  /* Custom thin scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.28) transparent;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
+    height: 8px;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--muted-foreground) / 0.3);
-    border-radius: 3px;
+    background-color: hsl(var(--muted-foreground) / 0.28);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--muted-foreground) / 0.5);
+    background-color: hsl(var(--muted-foreground) / 0.45);
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
 }
 
-/* Google Places autocomplete dropdown — above modals, drawers, checkout overlay */
 .pac-container {
   z-index: 10000 !important;
 }

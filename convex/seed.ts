@@ -1,4 +1,5 @@
 import { mutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { hashPassword } from "./passwords";
 
 type SeedListing = {
@@ -6,6 +7,7 @@ type SeedListing = {
   orgKey: "seller1" | "seller2";
   title: string;
   listingType: "SALE" | "RENT";
+  assetType?: "MOBILE_HOME" | "TINY_HOUSE";
   priceCents: number;
   beds: number;
   baths: number;
@@ -23,7 +25,9 @@ type SeedListing = {
   lng: number;
   communityName?: string;
   lotRentCents?: number;
-  status?: "PENDING" | "APPROVED" | "REJECTED" | "ARCHIVED";
+  status?: "PENDING" | "APPROVED" | "REJECTED" | "ARCHIVED" | "SOLD";
+  /** Days ago the listing closed (only used when status is SOLD). */
+  soldDaysAgo?: number;
   description?: string;
 };
 
@@ -571,6 +575,428 @@ const DEMO_LISTINGS: SeedListing[] = [
     communityName: "Volunteer Valley MHP",
     lotRentCents: 37000,
   },
+  {
+    seedKey: "sold-clayton-austin",
+    orgKey: "seller1",
+    title: "Closed — 2022 Clayton Absolute in Austin",
+    listingType: "SALE",
+    priceCents: 12850000,
+    beds: 3,
+    baths: 2,
+    sqft: 1620,
+    yearBuilt: 2022,
+    manufacturer: "Clayton",
+    model: "Absolute",
+    widthFeet: 28,
+    lengthFeet: 58,
+    address1: "9100 N Lamar Blvd",
+    city: "Austin",
+    state: "TX",
+    zip: "78753",
+    lat: 30.357,
+    lng: -97.698,
+    communityName: "Lamar Crossing MHP",
+    status: "SOLD",
+    soldDaysAgo: 2,
+    description: "Recently closed sale. Move-in ready Clayton Absolute.",
+  },
+  {
+    seedKey: "sold-champion-phoenix",
+    orgKey: "seller2",
+    title: "Closed — Champion Titan Double-Wide Phoenix",
+    listingType: "SALE",
+    priceCents: 10490000,
+    beds: 3,
+    baths: 2,
+    sqft: 1480,
+    yearBuilt: 2021,
+    manufacturer: "Champion",
+    model: "Titan",
+    widthFeet: 28,
+    lengthFeet: 52,
+    address1: "3400 E Baseline Rd",
+    city: "Phoenix",
+    state: "AZ",
+    zip: "85042",
+    lat: 33.378,
+    lng: -112.01,
+    communityName: "Baseline Palms",
+    status: "SOLD",
+    soldDaysAgo: 4,
+  },
+  {
+    seedKey: "sold-fleetwood-orlando",
+    orgKey: "seller1",
+    title: "Closed — Fleetwood Bayside Orlando",
+    listingType: "SALE",
+    priceCents: 9550000,
+    beds: 2,
+    baths: 2,
+    sqft: 1180,
+    yearBuilt: 2019,
+    manufacturer: "Fleetwood",
+    model: "Bayside",
+    widthFeet: 24,
+    lengthFeet: 48,
+    address1: "5400 S Kirkman Rd",
+    city: "Orlando",
+    state: "FL",
+    zip: "32819",
+    lat: 28.468,
+    lng: -81.458,
+    communityName: "Kirkman Estates",
+    status: "SOLD",
+    soldDaysAgo: 1,
+  },
+  {
+    seedKey: "sold-skyline-dallas",
+    orgKey: "seller2",
+    title: "Closed — Skyline Nomad Dallas",
+    listingType: "SALE",
+    priceCents: 8750000,
+    beds: 3,
+    baths: 2,
+    sqft: 1400,
+    yearBuilt: 2020,
+    manufacturer: "Skyline",
+    model: "Nomad",
+    widthFeet: 28,
+    lengthFeet: 50,
+    address1: "2600 W Northwest Hwy",
+    city: "Dallas",
+    state: "TX",
+    zip: "75220",
+    lat: 32.86,
+    lng: -96.87,
+    communityName: "Northwest Village",
+    status: "SOLD",
+    soldDaysAgo: 5,
+  },
+  {
+    seedKey: "sold-legacy-tampa",
+    orgKey: "seller1",
+    title: "Closed — Legacy Housing Tampa Bay",
+    listingType: "SALE",
+    priceCents: 11990000,
+    beds: 4,
+    baths: 2,
+    sqft: 1720,
+    yearBuilt: 2023,
+    manufacturer: "Legacy",
+    model: "Independence",
+    widthFeet: 32,
+    lengthFeet: 56,
+    address1: "4100 W Hillsborough Ave",
+    city: "Tampa",
+    state: "FL",
+    zip: "33614",
+    lat: 27.996,
+    lng: -82.505,
+    communityName: "Hillsborough Haven",
+    status: "SOLD",
+    soldDaysAgo: 3,
+  },
+  {
+    seedKey: "sold-clayton-jacksonville",
+    orgKey: "seller2",
+    title: "Closed — Clayton Buccaneer Jacksonville",
+    listingType: "SALE",
+    priceCents: 7990000,
+    beds: 2,
+    baths: 2,
+    sqft: 1100,
+    yearBuilt: 2018,
+    manufacturer: "Clayton",
+    model: "Buccaneer",
+    widthFeet: 24,
+    lengthFeet: 44,
+    address1: "7800 Lem Turner Rd",
+    city: "Jacksonville",
+    state: "FL",
+    zip: "32208",
+    lat: 30.39,
+    lng: -81.72,
+    communityName: "Lem Turner MHP",
+    status: "SOLD",
+    soldDaysAgo: 6,
+  },
+  {
+    seedKey: "leased-champion-tampa",
+    orgKey: "seller1",
+    title: "Leased — Champion Ideal in Tampa",
+    listingType: "RENT",
+    priceCents: 149500,
+    beds: 3,
+    baths: 2,
+    sqft: 1340,
+    yearBuilt: 2020,
+    manufacturer: "Champion",
+    model: "Ideal",
+    widthFeet: 28,
+    lengthFeet: 48,
+    address1: "5200 E Busch Blvd",
+    city: "Tampa",
+    state: "FL",
+    zip: "33617",
+    lat: 28.033,
+    lng: -82.4,
+    communityName: "Busch Gardens Estates",
+    lotRentCents: 45000,
+    status: "SOLD",
+    soldDaysAgo: 2,
+    description: "Recently leased manufactured home in a family-friendly community.",
+  },
+  {
+    seedKey: "leased-fleetwood-dallas",
+    orgKey: "seller2",
+    title: "Leased — Fleetwood Westport Dallas",
+    listingType: "RENT",
+    priceCents: 129900,
+    beds: 2,
+    baths: 2,
+    sqft: 1120,
+    yearBuilt: 2019,
+    manufacturer: "Fleetwood",
+    model: "Westport",
+    widthFeet: 24,
+    lengthFeet: 44,
+    address1: "3500 W Mockingbird Ln",
+    city: "Dallas",
+    state: "TX",
+    zip: "75235",
+    lat: 32.835,
+    lng: -96.845,
+    communityName: "Mockingbird MHP",
+    lotRentCents: 38000,
+    status: "SOLD",
+    soldDaysAgo: 4,
+  },
+  {
+    seedKey: "leased-clayton-phoenix",
+    orgKey: "seller1",
+    title: "Leased — Clayton Destiny Phoenix",
+    listingType: "RENT",
+    priceCents: 119500,
+    beds: 2,
+    baths: 1,
+    sqft: 980,
+    yearBuilt: 2017,
+    manufacturer: "Clayton",
+    model: "Destiny",
+    widthFeet: 16,
+    lengthFeet: 60,
+    address1: "4200 W Indian School Rd",
+    city: "Phoenix",
+    state: "AZ",
+    zip: "85019",
+    lat: 33.495,
+    lng: -112.14,
+    communityName: "Indian School Village",
+    lotRentCents: 35000,
+    status: "SOLD",
+    soldDaysAgo: 1,
+  },
+  // Tiny houses — modern prefab / expandable container style
+  {
+    seedKey: "tiny-expandable-container-austin",
+    orgKey: "seller1",
+    title: "Expandable Prefab Tiny House — Austin",
+    assetType: "TINY_HOUSE",
+    listingType: "SALE",
+    priceCents: 4290000,
+    beds: 1,
+    baths: 1,
+    sqft: 320,
+    yearBuilt: 2024,
+    manufacturer: "NestPod",
+    model: "Expand X1",
+    widthFeet: 10,
+    lengthFeet: 20,
+    address1: "1100 E 5th St",
+    city: "Austin",
+    state: "TX",
+    zip: "78702",
+    lat: 30.263,
+    lng: -97.727,
+    communityName: "East Side Tiny Lots",
+    description:
+      "Modern expandable container tiny house with fold-out living deck, full kitchenette, loft sleeping, and smart climate control. Move-in ready prefab inspired by contemporary modular designs.",
+  },
+  {
+    seedKey: "tiny-glass-cabin-asheville",
+    orgKey: "seller2",
+    title: "Glass-Wall Tiny Cabin — Asheville",
+    assetType: "TINY_HOUSE",
+    listingType: "SALE",
+    priceCents: 6850000,
+    beds: 1,
+    baths: 1,
+    sqft: 400,
+    yearBuilt: 2023,
+    manufacturer: "Alpine Modular",
+    model: "Vista 400",
+    widthFeet: 12,
+    lengthFeet: 28,
+    address1: "22 Tunnel Rd",
+    city: "Asheville",
+    state: "NC",
+    zip: "28805",
+    lat: 35.592,
+    lng: -82.492,
+    communityName: "Blue Ridge Tiny Village",
+    description:
+      "Floor-to-ceiling glass, insulated steel frame, and a compact loft bedroom. Ideal ADU or short-stay retreat with low utility costs.",
+  },
+  {
+    seedKey: "tiny-studio-pod-tampa",
+    orgKey: "seller1",
+    title: "Studio Prefab Pod — Tampa Bay",
+    assetType: "TINY_HOUSE",
+    listingType: "RENT",
+    priceCents: 145000,
+    beds: 1,
+    baths: 1,
+    sqft: 280,
+    yearBuilt: 2024,
+    manufacturer: "NestPod",
+    model: "Studio S",
+    widthFeet: 8,
+    lengthFeet: 24,
+    address1: "4800 E Busch Blvd",
+    city: "Tampa",
+    state: "FL",
+    zip: "33617",
+    lat: 28.033,
+    lng: -82.405,
+    communityName: "Bay Tiny Living",
+    lotRentCents: 45000,
+    description:
+      "Compact expandable studio pod with bathroom, kitchenette, and outdoor awning. Perfect for guests or remote work. Monthly rent includes lot.",
+  },
+  {
+    seedKey: "tiny-family-duo-denver",
+    orgKey: "seller2",
+    title: "2-Bed Expandable Tiny Home — Denver",
+    assetType: "TINY_HOUSE",
+    listingType: "SALE",
+    priceCents: 7990000,
+    beds: 2,
+    baths: 1,
+    sqft: 480,
+    yearBuilt: 2025,
+    manufacturer: "Horizon Prefab",
+    model: "Duo Expand",
+    widthFeet: 12,
+    lengthFeet: 32,
+    address1: "3400 W 38th Ave",
+    city: "Denver",
+    state: "CO",
+    zip: "80211",
+    lat: 39.769,
+    lng: -105.033,
+    communityName: "Highlands Tiny Court",
+    description:
+      "Two expandable wings create a surprisingly spacious tiny home: primary loft, guest nook, full bath, and outdoor kitchen ready deck.",
+  },
+  {
+    seedKey: "tiny-offgrid-boise",
+    orgKey: "seller1",
+    title: "Off-Grid Ready Tiny House — Boise",
+    assetType: "TINY_HOUSE",
+    listingType: "SALE",
+    priceCents: 5490000,
+    beds: 1,
+    baths: 1,
+    sqft: 360,
+    yearBuilt: 2024,
+    manufacturer: "Horizon Prefab",
+    model: "Trail Ready",
+    widthFeet: 10,
+    lengthFeet: 26,
+    address1: "5200 W State St",
+    city: "Boise",
+    state: "ID",
+    zip: "83703",
+    lat: 43.648,
+    lng: -116.275,
+    description:
+      "Steel modular shell with solar-ready roof mounts, composting-toilet option, and propane backup. Towable chassis available separately.",
+  },
+  {
+    seedKey: "tiny-waterfront-charleston",
+    orgKey: "seller2",
+    title: "Waterfront Tiny Retreat — Charleston",
+    assetType: "TINY_HOUSE",
+    listingType: "SALE",
+    priceCents: 9250000,
+    beds: 1,
+    baths: 1,
+    sqft: 420,
+    yearBuilt: 2023,
+    manufacturer: "Coastal Modular",
+    model: "Harbor 420",
+    widthFeet: 12,
+    lengthFeet: 30,
+    address1: "88 Folly Rd",
+    city: "Charleston",
+    state: "SC",
+    zip: "29412",
+    lat: 32.735,
+    lng: -79.965,
+    communityName: "Folly Tiny Shore",
+    description:
+      "Elevated prefab tiny home with wrap deck, hurricane-rated windows, and open living/kitchen. Designed for coastal lots and ADU use.",
+  },
+  {
+    seedKey: "tiny-urban-adjoining-portland",
+    orgKey: "seller1",
+    title: "Urban ADU Tiny House — Portland",
+    assetType: "TINY_HOUSE",
+    listingType: "RENT",
+    priceCents: 185000,
+    beds: 1,
+    baths: 1,
+    sqft: 350,
+    yearBuilt: 2024,
+    manufacturer: "NestPod",
+    model: "ADU Flex",
+    widthFeet: 10,
+    lengthFeet: 28,
+    address1: "2200 NE Alberta St",
+    city: "Portland",
+    state: "OR",
+    zip: "97211",
+    lat: 45.559,
+    lng: -122.643,
+    lotRentCents: 0,
+    description:
+      "City-permitted ADU-style tiny house: laundry closet, full bath, queen loft, and street-facing porch. Monthly rental.",
+  },
+  {
+    seedKey: "tiny-desert-modern-phoenix",
+    orgKey: "seller2",
+    title: "Desert Modern Tiny House — Phoenix",
+    assetType: "TINY_HOUSE",
+    listingType: "SALE",
+    priceCents: 6150000,
+    beds: 1,
+    baths: 1,
+    sqft: 380,
+    yearBuilt: 2025,
+    manufacturer: "Alpine Modular",
+    model: "Solara",
+    widthFeet: 11,
+    lengthFeet: 28,
+    address1: "4100 E Camelback Rd",
+    city: "Phoenix",
+    state: "AZ",
+    zip: "85018",
+    lat: 33.509,
+    lng: -111.995,
+    communityName: "Camelback Tiny Lots",
+    description:
+      "Heat-reflective cladding, deep overhangs, and an expandable side deck. Prefab tiny living tuned for desert climates.",
+  },
 ];
 
 async function insertSeedListings(
@@ -588,17 +1014,23 @@ async function insertSeedListings(
 
     const org = orgs[item.orgKey];
     const user = users[item.orgKey];
-    const { orgKey, seedKey, status, description, ...rest } = item;
+    const { orgKey, seedKey, status, description, soldDaysAgo, assetType, ...rest } = item;
+    const soldAt =
+      status === "SOLD"
+        ? now - (soldDaysAgo ?? 3) * 24 * 60 * 60 * 1000
+        : undefined;
 
     await ctx.db.insert("listing", {
       organizationId: org,
       createdBy: user,
       status: status ?? "APPROVED",
+      assetType: assetType ?? "MOBILE_HOME",
       description:
         description ??
         "Beautiful manufactured home in a great community. Schedule a tour today.",
       createdAt: now,
-      updatedAt: now,
+      updatedAt: soldAt ?? now,
+      ...(soldAt != null ? { soldAt } : {}),
       ...rest,
     });
     inserted += 1;
@@ -618,6 +1050,26 @@ export const seedDemo = mutation({
       const seller2Org = orgs.find((o) => o.name === "Gulf Coast MH Dealers");
       const seller1User = users.find((u) => u.email === "seller@mhm.com");
       const seller2User = users.find((u) => u.email === "dealer@mhm.com");
+      const adminUser = users.find((u) => u.email === "admin@mhm.com");
+
+      // Ensure existing admin is assigned to a dealer org for listing.
+      if (adminUser && seller1Org && !adminUser.organizationId) {
+        await ctx.db.patch(adminUser._id, { organizationId: seller1Org._id });
+        const membership = await ctx.db
+          .query("organization_user")
+          .withIndex("by_user", (q) => q.eq("userId", adminUser._id))
+          .first();
+        if (!membership) {
+          await ctx.db.insert("organization_user", {
+            organizationId: seller1Org._id,
+            userId: adminUser._id,
+            role: "ADMIN",
+            isActive: true,
+            createdAt: Date.now(),
+          });
+        }
+      }
+
       if (!seller1Org || !seller2Org || !seller1User || !seller2User) {
         return { skipped: true, inserted: 0 };
       }
@@ -648,6 +1100,16 @@ export const seedDemo = mutation({
       url: "https://sunshinehomes.example.com",
       phone: "555-0100",
       type: "SELLER",
+      isActive: true,
+      createdAt: now,
+    });
+
+    // Assign admin to the primary dealer org so they can list under it.
+    await ctx.db.patch(adminId, { organizationId: seller1Org });
+    await ctx.db.insert("organization_user", {
+      organizationId: seller1Org,
+      userId: adminId,
+      role: "ADMIN",
       isActive: true,
       createdAt: now,
     });
@@ -742,6 +1204,152 @@ export const seedListings = mutation({
       approved: approved.length,
       forSale: approved.filter((l) => l.listingType === "SALE").length,
       forRent: approved.filter((l) => l.listingType === "RENT").length,
+    };
+  },
+});
+
+/** Idempotent: creates/updates Bob Wall admin, dealer, and customer accounts. */
+export const seedBobAccounts = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const passwordHash = await hashPassword("testing");
+    const results: Record<string, string> = {};
+
+    // Ensure a dealer org exists for admin + dealer users.
+    let dealerOrg = (
+      await ctx.db
+        .query("organization")
+        .withIndex("by_type", (q) => q.eq("type", "SELLER"))
+        .collect()
+    ).find((o) => o.name === "Sunshine Mobile Homes" && o.isActive !== false);
+
+    if (!dealerOrg) {
+      const orgId = await ctx.db.insert("organization", {
+        name: "Sunshine Mobile Homes",
+        url: "https://sunshinehomes.example.com",
+        phone: "555-0100",
+        type: "SELLER",
+        isActive: true,
+        createdAt: now,
+      });
+      dealerOrg = (await ctx.db.get(orgId))!;
+    }
+
+    async function upsertUser(opts: {
+      email: string;
+      name: string;
+      isAdmin?: boolean;
+      orgId?: Id<"organization">;
+      orgRole?: "OWNER" | "ADMIN" | "MEMBER";
+      createBuyerOrg?: boolean;
+    }) {
+      const email = opts.email.trim().toLowerCase();
+      let user = await ctx.db
+        .query("user")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .first();
+
+      if (user) {
+        await ctx.db.patch(user._id, {
+          name: opts.name,
+          passwordHash,
+          isApproved: true,
+          isAdmin: opts.isAdmin ?? false,
+          emailVerified: true,
+          ...(opts.orgId ? { organizationId: opts.orgId } : {}),
+        });
+        results[email] = "updated";
+      } else {
+        let organizationId = opts.orgId;
+        if (opts.createBuyerOrg) {
+          organizationId = await ctx.db.insert("organization", {
+            name: `${opts.name} (Customer)`,
+            type: "BUYER",
+            isActive: true,
+            createdAt: now,
+          });
+        }
+        const userId = await ctx.db.insert("user", {
+          email,
+          name: opts.name,
+          passwordHash,
+          isApproved: true,
+          isAdmin: opts.isAdmin ?? false,
+          emailVerified: true,
+          createdAt: now,
+          ...(organizationId ? { organizationId } : {}),
+        });
+        user = (await ctx.db.get(userId))!;
+        results[email] = "created";
+
+        if (organizationId) {
+          await ctx.db.insert("organization_user", {
+            organizationId,
+            userId,
+            role: opts.orgRole ?? (opts.createBuyerOrg ? "OWNER" : "MEMBER"),
+            isActive: true,
+            createdAt: now,
+          });
+        }
+        return user;
+      }
+
+      if (opts.orgId) {
+        const membership = await ctx.db
+          .query("organization_user")
+          .withIndex("by_user", (q) => q.eq("userId", user!._id))
+          .collect();
+        const hasOrg = membership.some(
+          (m) => m.organizationId === opts.orgId && m.isActive !== false,
+        );
+        if (!hasOrg) {
+          await ctx.db.insert("organization_user", {
+            organizationId: opts.orgId,
+            userId: user._id,
+            role: opts.orgRole ?? "MEMBER",
+            isActive: true,
+            createdAt: now,
+          });
+        }
+      }
+
+      return user;
+    }
+
+    await upsertUser({
+      email: "bob.m.wall@gmail.com",
+      name: "Bob Wall",
+      isAdmin: true,
+      orgId: dealerOrg._id,
+      orgRole: "ADMIN",
+    });
+
+    await upsertUser({
+      email: "Jdboakwood@gmail.com",
+      name: "JD Boakwood",
+      isAdmin: true,
+      orgId: dealerOrg._id,
+      orgRole: "ADMIN",
+    });
+
+    await upsertUser({
+      email: "bob.m.wall+dealer@gmail.com",
+      name: "Bob Wall (Dealer)",
+      orgId: dealerOrg._id,
+      orgRole: "OWNER",
+    });
+
+    await upsertUser({
+      email: "bob.m.wall+customer@gmail.com",
+      name: "Bob Wall (Customer)",
+      createBuyerOrg: true,
+    });
+
+    return {
+      password: "testing",
+      dealerOrg: dealerOrg.name,
+      results,
     };
   },
 });

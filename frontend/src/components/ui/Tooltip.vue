@@ -1,25 +1,25 @@
 <template>
-  <div class="relative inline-block" ref="containerRef">
+  <div :class="cn('relative inline-block', wrapperClass)" ref="containerRef">
     <slot />
     <Teleport to="body">
       <Transition
-        enter-active-class="transition ease-out duration-200"
+        enter-active-class="transition ease-out duration-150"
         enter-from-class="opacity-0 scale-95"
         enter-to-class="opacity-100 scale-100"
-        leave-active-class="transition ease-in duration-150"
+        leave-active-class="transition ease-in duration-100"
         leave-from-class="opacity-100 scale-100"
         leave-to-class="opacity-0 scale-95"
       >
         <div
-          v-if="isVisible"
-          class="fixed z-[200] px-2 py-1 text-xs font-medium text-white bg-gray-900 dark:bg-gray-800 rounded-md shadow-lg whitespace-nowrap pointer-events-none"
+          v-if="isVisible && !disabled"
+          class="fixed z-[200] whitespace-nowrap rounded-md bg-zinc-900 px-2.5 py-1.5 text-xs font-semibold text-white shadow-lg pointer-events-none dark:bg-zinc-800"
           :style="tooltipStyle"
         >
           {{ text }}
           <div
-            class="absolute w-2 h-2 bg-gray-900 dark:bg-gray-800 transform rotate-45"
+            class="absolute h-2 w-2 rotate-45 transform bg-zinc-900 dark:bg-zinc-800"
             :class="arrowClasses"
-          ></div>
+          />
         </div>
       </Transition>
     </Teleport>
@@ -27,15 +27,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { cn } from '@/lib/utils'
 
 interface Props {
   text: string
   position?: 'top' | 'bottom' | 'left' | 'right'
+  disabled?: boolean
+  wrapperClass?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   position: 'top',
+  disabled: false,
 })
 
 const GAP = 8
@@ -95,6 +99,7 @@ function updatePosition() {
 }
 
 const show = async () => {
+  if (props.disabled) return
   updatePosition()
   isVisible.value = true
   await nextTick()
@@ -105,6 +110,13 @@ const hide = () => {
   isVisible.value = false
 }
 
+watch(
+  () => props.disabled,
+  (disabled) => {
+    if (disabled) hide()
+  },
+)
+
 const onScrollOrResize = () => {
   if (isVisible.value) updatePosition()
 }
@@ -114,6 +126,8 @@ onMounted(() => {
   if (!el) return
   el.addEventListener('mouseenter', show)
   el.addEventListener('mouseleave', hide)
+  el.addEventListener('focusin', show)
+  el.addEventListener('focusout', hide)
   window.addEventListener('scroll', onScrollOrResize, true)
   window.addEventListener('resize', onScrollOrResize)
 })
@@ -123,6 +137,8 @@ onUnmounted(() => {
   if (el) {
     el.removeEventListener('mouseenter', show)
     el.removeEventListener('mouseleave', hide)
+    el.removeEventListener('focusin', show)
+    el.removeEventListener('focusout', hide)
   }
   window.removeEventListener('scroll', onScrollOrResize, true)
   window.removeEventListener('resize', onScrollOrResize)

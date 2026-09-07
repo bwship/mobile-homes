@@ -58,7 +58,7 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="auth-field-label">Manufacturer</label>
+            <label class="auth-field-label">Factory / manufacturer</label>
             <Input v-model="form.manufacturer" placeholder="Clayton" />
           </div>
           <div>
@@ -127,6 +127,7 @@ const props = defineProps<{
   open: boolean
   userEmail: string
   listing?: any | null
+  organizationId?: string
 }>()
 
 const emit = defineEmits<{ close: []; saved: [] }>()
@@ -223,7 +224,10 @@ async function handleSubmit() {
         ...payload,
       })
     } else {
-      await convex.mutation(api.listings.createListing, payload)
+      await convex.mutation(api.listings.createListing, {
+        ...payload,
+        ...(props.organizationId ? { organizationId: props.organizationId as any } : {}),
+      })
     }
 
     emit('saved')
