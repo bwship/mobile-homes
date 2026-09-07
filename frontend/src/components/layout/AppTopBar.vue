@@ -78,6 +78,23 @@
             </div>
           </transition>
         </template>
+        <template v-else>
+          <div class="ml-1 flex items-center gap-2.5 text-sm">
+            <router-link
+              to="/login"
+              class="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Log in
+            </router-link>
+            <span class="text-border">·</span>
+            <router-link
+              to="/signup"
+              class="font-medium text-primary transition-colors hover:brightness-110"
+            >
+              Sign up
+            </router-link>
+          </div>
+        </template>
       </div>
     </div>
   </header>
