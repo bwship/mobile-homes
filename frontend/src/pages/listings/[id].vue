@@ -53,7 +53,25 @@
               >
                 {{ listing.listingType === 'RENT' ? 'For Rent' : 'For Sale' }}
               </span>
-              <h1 class="text-3xl font-bold">{{ listing.title }}</h1>
+              <div class="flex flex-wrap items-center gap-2">
+                <h1 class="text-3xl font-bold">{{ listing.title }}</h1>
+                <button
+                  v-if="canManage"
+                  type="button"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full text-primary transition-colors hover:bg-primary/10"
+                  aria-label="Edit listing"
+                  title="Edit listing"
+                  @click="editOpen = true"
+                >
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                </button>
+              </div>
               <p class="text-muted-foreground mt-1">{{ fullAddress(listing) }}</p>
             </div>
             <div class="text-right">
@@ -152,10 +170,20 @@
     </div>
   </div>
   </div>
+
+  <ListingModal
+    v-if="userStore.user?.email"
+    :open="editOpen"
+    :user-email="userStore.adminApiEmail || userStore.user.email"
+    :organization-id="listing?.organizationId"
+    :listing="listing"
+    @close="editOpen = false"
+    @saved="onListingSaved"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { convex } from '@/lib/convex'
 import { api } from '@/lib/convex-generated'
@@ -168,6 +196,7 @@ import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import CardContent from '@/components/ui/CardContent.vue'
 import ListingMap from '@/components/listings/ListingMap.vue'
+import ListingModal from '@/components/listings/ListingModal.vue'
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -179,6 +208,8 @@ const listing = ref<any>(null)
 const loading = ref(true)
 const activeImage = ref(0)
 const favorited = ref(false)
+const canManage = ref(false)
+const editOpen = ref(false)
 const inquiryLoading = ref(false)
 const inquirySent = ref(false)
 const inquiryError = ref<string | null>(null)
@@ -187,23 +218,49 @@ const messageBody = ref('')
 const heroImage = computed(() => listing.value?.images?.[activeImage.value]?.url ?? null)
 const lotRent = computed(() => formatLotRent(listing.value?.lotRentCents))
 
-onMounted(async () => {
+async function loadListing() {
   const id = route.params.id as string
+  loading.value = true
   try {
     listing.value = await convex.query(api.listings.getPublicListing, {
       listingId: id as any,
       viewerEmail: userStore.adminApiEmail || userStore.user?.email,
     })
+    activeImage.value = 0
     if (userStore.user?.email && listing.value) {
-      favorited.value = await convex.query(api.favorites.isFavorite, {
-        userEmail: userStore.user.email,
-        listingId: id as any,
-      })
+      const [isFav, manage] = await Promise.all([
+        convex.query(api.favorites.isFavorite, {
+          userEmail: userStore.user.email,
+          listingId: id as any,
+        }),
+        convex.query(api.listings.canManageListing, {
+          userEmail: userStore.adminApiEmail || userStore.user.email,
+          listingId: id as any,
+        }),
+      ])
+      favorited.value = Boolean(isFav)
+      canManage.value = Boolean(manage)
+    } else {
+      favorited.value = false
+      canManage.value = false
     }
   } finally {
     loading.value = false
   }
-})
+}
+
+async function onListingSaved() {
+  await loadListing()
+}
+
+onMounted(loadListing)
+
+watch(
+  () => [route.params.id, userStore.user?.email, userStore.adminApiEmail],
+  () => {
+    void loadListing()
+  },
+)
 
 async function toggleFavorite() {
   if (!userStore.user?.email || !listing.value) return

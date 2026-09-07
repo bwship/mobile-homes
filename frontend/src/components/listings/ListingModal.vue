@@ -1,16 +1,75 @@
 <template>
   <div
     v-if="open"
-    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+    class="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
   >
     <div class="absolute inset-0 bg-black/50" @click="$emit('close')" />
-    <div class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-background rounded-t-2xl sm:rounded-2xl border border-border shadow-xl">
-      <div class="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl border border-border bg-background shadow-xl sm:rounded-2xl">
+      <div class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background px-6 py-4">
         <h2 class="text-lg font-semibold">{{ editing ? 'Edit listing' : 'New listing' }}</h2>
         <button type="button" class="text-muted-foreground hover:text-foreground" @click="$emit('close')">✕</button>
       </div>
 
-      <form class="p-6 space-y-4" @submit.prevent="handleSubmit">
+      <form class="space-y-4 p-6" @submit.prevent="handleSubmit">
+        <div>
+          <label class="auth-field-label">Photos</label>
+          <div class="flex flex-wrap gap-2">
+            <div
+              v-for="(img, index) in images"
+              :key="img._id || img.storageId || index"
+              class="group relative h-20 w-20 shrink-0 cursor-grab overflow-hidden rounded-lg border-2 bg-muted active:cursor-grabbing"
+              :class="index === 0 ? 'border-primary' : 'border-border'"
+              draggable="true"
+              @dragstart="onDragStart(index)"
+              @dragover.prevent
+              @drop.prevent="onDrop(index)"
+            >
+              <img :src="img.url" alt="" class="h-full w-full object-cover" />
+              <span
+                class="absolute left-1 top-1 rounded bg-black/60 px-1 text-[10px] font-bold text-white"
+              >
+                {{ index + 1 }}
+              </span>
+              <button
+                type="button"
+                class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                :disabled="photosBusy"
+                aria-label="Remove photo"
+                @click.stop="removeImage(index)"
+              >
+                <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <label
+              class="flex h-20 w-20 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+              :class="photosBusy && 'pointer-events-none opacity-50'"
+            >
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span class="mt-0.5 text-[10px] font-semibold">Add</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                class="hidden"
+                :disabled="photosBusy"
+                @change="onFilesSelected"
+              />
+            </label>
+          </div>
+          <p class="mt-1.5 text-xs text-muted-foreground">
+            {{
+              images.length === 0
+                ? 'Add photos. First image is the main photo.'
+                : `${images.length} photo${images.length === 1 ? '' : 's'}. Drag to reorder. First is main.`
+            }}
+          </p>
+        </div>
+
         <div>
           <label class="auth-field-label">Title</label>
           <Input v-model="form.title" required placeholder="2021 Clayton 3 bed / 2 bath" />
@@ -25,9 +84,17 @@
             </select>
           </div>
           <div>
-            <label class="auth-field-label">Price ($)</label>
-            <Input v-model="form.priceDollars" type="number" min="0" step="1" required />
+            <label class="auth-field-label">Asset type</label>
+            <select v-model="form.assetType" class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <option value="MOBILE_HOME">Mobile Home</option>
+              <option value="TINY_HOUSE">Tiny House</option>
+            </select>
           </div>
+        </div>
+
+        <div>
+          <label class="auth-field-label">Price ($)</label>
+          <Input v-model="form.priceDollars" type="number" min="0" step="1" required />
         </div>
 
         <div class="grid grid-cols-3 gap-4">
@@ -84,7 +151,14 @@
           </div>
           <div>
             <label class="auth-field-label">State</label>
-            <Input v-model="form.state" required maxlength="2" placeholder="FL" />
+            <select
+              v-model="form.state"
+              required
+              class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="" disabled>Select</option>
+              <option v-for="st in US_STATES" :key="st" :value="st">{{ st }}</option>
+            </select>
           </div>
           <div>
             <label class="auth-field-label">ZIP</label>
@@ -106,7 +180,7 @@
 
         <div class="flex gap-3 pt-2">
           <Button type="button" variant="outline" class="flex-1" @click="$emit('close')">Cancel</Button>
-          <Button type="submit" class="flex-1" :loading="saving" loading-text="Saving...">
+          <Button type="submit" class="flex-1" :loading="saving" loading-text="Saving…">
             {{ editing ? 'Save changes' : 'Submit for review' }}
           </Button>
         </div>
@@ -122,6 +196,14 @@ import Button from '@/components/ui/Button.vue'
 import { convex } from '@/lib/convex'
 import { api } from '@/lib/convex-generated'
 import { geocodeAddress } from '@/lib/geocode'
+import { US_STATES } from '@/lib/listingFormat'
+
+type ListingImageRow = {
+  _id?: string
+  storageId: string
+  url: string
+  isNew?: boolean
+}
 
 const props = defineProps<{
   open: boolean
@@ -133,12 +215,16 @@ const props = defineProps<{
 const emit = defineEmits<{ close: []; saved: [] }>()
 
 const saving = ref(false)
+const photosBusy = ref(false)
 const error = ref<string | null>(null)
 const editing = ref(false)
+const images = ref<ListingImageRow[]>([])
+const dragFrom = ref<number | null>(null)
 
 const emptyForm = () => ({
   title: '',
   listingType: 'SALE' as 'SALE' | 'RENT',
+  assetType: 'MOBILE_HOME' as 'MOBILE_HOME' | 'TINY_HOUSE',
   priceDollars: '',
   lotRentDollars: '',
   beds: '',
@@ -157,6 +243,19 @@ const emptyForm = () => ({
 
 const form = reactive(emptyForm())
 
+function syncImagesFromListing(listing: any) {
+  const rows = Array.isArray(listing?.images) ? [...listing.images] : []
+  rows.sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  images.value = rows
+    .filter((img: any) => img.url && img.storageId)
+    .map((img: any) => ({
+      _id: img._id,
+      storageId: img.storageId,
+      url: img.url,
+      isNew: false,
+    }))
+}
+
 watch(
   () => [props.open, props.listing] as const,
   () => {
@@ -168,6 +267,7 @@ watch(
       Object.assign(form, {
         title: l.title ?? '',
         listingType: l.listingType ?? 'SALE',
+        assetType: l.assetType === 'TINY_HOUSE' ? 'TINY_HOUSE' : 'MOBILE_HOME',
         priceDollars: String((l.priceCents ?? 0) / 100),
         lotRentDollars: l.lotRentCents != null ? String(l.lotRentCents / 100) : '',
         beds: l.beds != null ? String(l.beds) : '',
@@ -179,17 +279,143 @@ watch(
         communityName: l.communityName ?? '',
         address1: l.address1 ?? '',
         city: l.city ?? '',
-        state: l.state ?? '',
+        state: (l.state ?? '').toUpperCase(),
         zip: l.zip ?? '',
         description: l.description ?? '',
       })
+      syncImagesFromListing(l)
     } else {
       editing.value = false
       Object.assign(form, emptyForm())
+      images.value = []
     }
   },
   { immediate: true },
 )
+
+async function uploadFile(file: File): Promise<{ storageId: string; url: string } | null> {
+  try {
+    const uploadUrl = await convex.mutation(api.files.generateUploadUrl, {})
+    const res = await fetch(uploadUrl, { method: 'POST', body: file })
+    if (!res.ok) throw new Error(`Upload failed (${res.status})`)
+    const responseText = await res.text()
+    let storageId: string
+    try {
+      const parsed = JSON.parse(responseText)
+      storageId = parsed.storageId || parsed
+    } catch {
+      storageId = responseText
+    }
+    storageId = String(storageId).trim()
+    const url = await convex.query(api.files.getFileUrl, { storageId: storageId as any })
+    if (!url) throw new Error('Could not resolve file URL')
+    return { storageId, url }
+  } catch (err) {
+    console.error(err)
+    return null
+  }
+}
+
+async function onFilesSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = input.files
+  if (!files?.length) return
+  photosBusy.value = true
+  error.value = null
+  try {
+    const start = images.value.length
+    for (let i = 0; i < files.length; i += 1) {
+      const uploaded = await uploadFile(files[i])
+      if (!uploaded) {
+        error.value = 'Some photos failed to upload'
+        continue
+      }
+      if (editing.value && props.listing?._id) {
+        const imageId = await convex.mutation(api.listings.addListingImage, {
+          userEmail: props.userEmail,
+          listingId: props.listing._id,
+          storageId: uploaded.storageId as any,
+          sortOrder: start + i,
+        })
+        images.value.push({
+          _id: imageId as string,
+          storageId: uploaded.storageId,
+          url: uploaded.url,
+          isNew: false,
+        })
+      } else {
+        images.value.push({
+          storageId: uploaded.storageId,
+          url: uploaded.url,
+          isNew: true,
+        })
+      }
+    }
+  } finally {
+    photosBusy.value = false
+    input.value = ''
+  }
+}
+
+async function removeImage(index: number) {
+  const img = images.value[index]
+  if (!img) return
+  photosBusy.value = true
+  error.value = null
+  try {
+    if (img._id && editing.value) {
+      await convex.mutation(api.listings.removeListingImage, {
+        userEmail: props.userEmail,
+        imageId: img._id as any,
+      })
+    }
+    images.value.splice(index, 1)
+    if (editing.value && props.listing?._id) {
+      await persistOrder()
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Could not remove photo'
+  } finally {
+    photosBusy.value = false
+  }
+}
+
+function onDragStart(index: number) {
+  dragFrom.value = index
+}
+
+async function onDrop(targetIndex: number) {
+  const from = dragFrom.value
+  dragFrom.value = null
+  if (from == null || from === targetIndex) return
+  const next = [...images.value]
+  const [moved] = next.splice(from, 1)
+  next.splice(targetIndex, 0, moved)
+  images.value = next
+  if (editing.value && props.listing?._id) {
+    photosBusy.value = true
+    try {
+      await persistOrder()
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Could not reorder photos'
+    } finally {
+      photosBusy.value = false
+    }
+  }
+}
+
+async function persistOrder() {
+  if (!props.listing?._id) return
+  const orderedImageIds = images.value
+    .map((img) => img._id)
+    .filter(Boolean) as string[]
+  if (!orderedImageIds.length) return
+  await convex.mutation(api.listings.reorderListingImages, {
+    userEmail: props.userEmail,
+    listingId: props.listing._id,
+    orderedImageIds: orderedImageIds as any,
+  })
+}
 
 async function handleSubmit() {
   saving.value = true
@@ -200,6 +426,7 @@ async function handleSubmit() {
       userEmail: props.userEmail,
       title: form.title,
       listingType: form.listingType,
+      assetType: form.assetType,
       priceCents: Math.round(Number(form.priceDollars) * 100),
       lotRentCents: form.lotRentDollars ? Math.round(Number(form.lotRentDollars) * 100) : undefined,
       beds: form.beds ? Number(form.beds) : undefined,
@@ -224,10 +451,19 @@ async function handleSubmit() {
         ...payload,
       })
     } else {
-      await convex.mutation(api.listings.createListing, {
+      const listingId = await convex.mutation(api.listings.createListing, {
         ...payload,
         ...(props.organizationId ? { organizationId: props.organizationId as any } : {}),
       })
+      for (let i = 0; i < images.value.length; i += 1) {
+        const img = images.value[i]
+        await convex.mutation(api.listings.addListingImage, {
+          userEmail: props.userEmail,
+          listingId: listingId as any,
+          storageId: img.storageId as any,
+          sortOrder: i,
+        })
+      }
     }
 
     emit('saved')

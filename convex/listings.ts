@@ -4,6 +4,21 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { getOrganizationOwner, getUserByEmailDoc, isUserAdmin, canManageOrganization } from "./helpers";
 
+async function requireListingManager(
+  ctx: any,
+  userEmail: string,
+  listingId: Id<"listing">,
+) {
+  const user = await getUserByEmailDoc(ctx, userEmail);
+  if (!user) throw new Error("Unauthorized");
+  const listing = await ctx.db.get(listingId);
+  if (!listing) throw new Error("Listing not found");
+  if (!(await canManageOrganization(ctx, user._id, listing.organizationId))) {
+    throw new Error("Unauthorized");
+  }
+  return { user, listing, isAdmin: await isUserAdmin(ctx, user._id) };
+}
+
 async function attachImages(ctx: any, listing: any) {
   const images = await ctx.db
     .query("listing_image")
@@ -439,13 +454,11 @@ export const updateListing = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const user = await getUserByEmailDoc(ctx, args.userEmail);
-    const listing = await ctx.db.get(args.listingId);
-    if (!listing) throw new Error("Listing not found");
-
-    const isAdmin = user ? await isUserAdmin(ctx, user._id) : false;
-    const isOwner = user?.organizationId === listing.organizationId;
-    if (!isAdmin && !isOwner) throw new Error("Unauthorized");
+    const { listing, isAdmin } = await requireListingManager(
+      ctx,
+      args.userEmail,
+      args.listingId,
+    );
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
     const fields = [
@@ -485,13 +498,7 @@ export const markListingSold = mutation({
     listingId: v.id("listing"),
   },
   handler: async (ctx, args) => {
-    const user = await getUserByEmailDoc(ctx, args.userEmail);
-    const listing = await ctx.db.get(args.listingId);
-    if (!listing) throw new Error("Listing not found");
-
-    const isAdmin = user ? await isUserAdmin(ctx, user._id) : false;
-    const isOwner = user?.organizationId === listing.organizationId;
-    if (!isAdmin && !isOwner) throw new Error("Unauthorized");
+    const { listing } = await requireListingManager(ctx, args.userEmail, args.listingId);
     if (listing.status !== "APPROVED" && listing.status !== "SOLD") {
       throw new Error("Only live listings can be marked sold");
     }
@@ -532,6 +539,20 @@ export const adminUpdateListingStatus = mutation({
   },
 });
 
+export const canManageListing = query({
+  args: {
+    userEmail: v.string(),
+    listingId: v.id("listing"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUserByEmailDoc(ctx, args.userEmail);
+    if (!user) return false;
+    const listing = await ctx.db.get(args.listingId);
+    if (!listing) return false;
+    return await canManageOrganization(ctx, user._id, listing.organizationId);
+  },
+});
+
 export const addListingImage = mutation({
   args: {
     userEmail: v.string(),
@@ -540,12 +561,7 @@ export const addListingImage = mutation({
     sortOrder: v.number(),
   },
   handler: async (ctx, args) => {
-    const user = await getUserByEmailDoc(ctx, args.userEmail);
-    const listing = await ctx.db.get(args.listingId);
-    if (!listing) throw new Error("Listing not found");
-    if (user?.organizationId !== listing.organizationId && !(user && (await isUserAdmin(ctx, user._id)))) {
-      throw new Error("Unauthorized");
-    }
+    await requireListingManager(ctx, args.userEmail, args.listingId);
 
     return await ctx.db.insert("listing_image", {
       listingId: args.listingId,
@@ -553,6 +569,54 @@ export const addListingImage = mutation({
       sortOrder: args.sortOrder,
       createdAt: Date.now(),
     });
+  },
+});
+
+export const removeListingImage = mutation({
+  args: {
+    userEmail: v.string(),
+    imageId: v.id("listing_image"),
+  },
+  handler: async (ctx, args) => {
+    const image = await ctx.db.get(args.imageId);
+    if (!image) throw new Error("Image not found");
+    await requireListingManager(ctx, args.userEmail, image.listingId);
+
+    const siblings = await ctx.db
+      .query("listing_image")
+      .withIndex("by_listing", (q) => q.eq("listingId", image.listingId))
+      .collect();
+    const stillUsed = siblings.some(
+      (s) => s._id !== image._id && s.storageId === image.storageId,
+    );
+    await ctx.db.delete(args.imageId);
+    if (!stillUsed) {
+      try {
+        await ctx.storage.delete(image.storageId);
+      } catch {
+        // Storage may already be gone
+      }
+    }
+    return { success: true };
+  },
+});
+
+export const reorderListingImages = mutation({
+  args: {
+    userEmail: v.string(),
+    listingId: v.id("listing"),
+    orderedImageIds: v.array(v.id("listing_image")),
+  },
+  handler: async (ctx, args) => {
+    await requireListingManager(ctx, args.userEmail, args.listingId);
+
+    for (let i = 0; i < args.orderedImageIds.length; i += 1) {
+      const imageId = args.orderedImageIds[i];
+      const image = await ctx.db.get(imageId);
+      if (!image || image.listingId !== args.listingId) continue;
+      await ctx.db.patch(imageId, { sortOrder: i });
+    }
+    return { success: true };
   },
 });
 

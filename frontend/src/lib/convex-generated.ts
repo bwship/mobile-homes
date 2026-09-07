@@ -44,7 +44,10 @@ export const api = {
     updateListing: 'listings:updateListing' as any,
     markListingSold: 'listings:markListingSold' as any,
     adminUpdateListingStatus: 'listings:adminUpdateListingStatus' as any,
+    canManageListing: 'listings:canManageListing' as any,
     addListingImage: 'listings:addListingImage' as any,
+    removeListingImage: 'listings:removeListingImage' as any,
+    reorderListingImages: 'listings:reorderListingImages' as any,
     submitListingInquiry: 'listings:submitListingInquiry' as any,
   },
   favorites: {

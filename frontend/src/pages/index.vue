@@ -31,7 +31,7 @@
             />
             <select
               v-model="listingType"
-              class="hidden h-9 rounded-full border-0 bg-transparent text-xs font-medium text-white/70 outline-none sm:block"
+              class="hidden h-9 cursor-pointer rounded-full border-0 bg-transparent text-xs font-medium text-white/70 outline-none sm:block"
             >
               <option value="" class="bg-zinc-900 text-white">Sale & rent</option>
               <option value="SALE" class="bg-zinc-900 text-white">For sale</option>

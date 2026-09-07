@@ -25,9 +25,20 @@
           <button
             type="button"
             class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors"
-            :class="view === 'list' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'"
-            aria-label="List view"
-            @click="view = 'list'"
+            :class="view === 'card' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'"
+            aria-label="Card view"
+            @click="view = 'card'"
+          >
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v5H4zM13 14h7v5h-7z" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+            :class="view === 'table' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'"
+            aria-label="Table view"
+            @click="view = 'table'"
           >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -51,6 +62,16 @@
           <p class="hidden text-xs text-muted-foreground sm:block">
             {{ loading ? 'Searching…' : `${listings.length} home${listings.length === 1 ? '' : 's'}` }}
           </p>
+          <label class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/60 pl-2.5 pr-1 text-xs font-semibold">
+            <span class="hidden text-muted-foreground sm:inline">Sort</span>
+            <select
+              v-model="sort"
+              class="h-full cursor-pointer bg-transparent pr-1 text-xs font-semibold text-foreground outline-none"
+              aria-label="Sort listings"
+            >
+              <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+          </label>
           <button
             type="button"
             class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border/60 px-3 text-xs font-semibold transition-colors hover:bg-muted"
@@ -76,7 +97,7 @@
       <div v-show="view === 'map'" class="absolute inset-0">
         <ListingMap
           class="h-full min-h-[420px]"
-          :listings="listings"
+          :listings="sortedListings"
           :selected-id="selectedId"
           :rounded="false"
           @select="onMapSelect"
@@ -98,13 +119,13 @@
         </div>
       </div>
 
-      <div v-show="view === 'list'" class="h-full overflow-y-auto p-4 md:p-6">
+      <div v-show="view === 'card'" class="h-full overflow-y-auto p-4 md:p-6">
         <div v-if="!loading && listings.length === 0" class="py-16 text-center text-sm text-muted-foreground">
           No listings match your filters.
         </div>
         <div v-else class="mx-auto grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <ListingCard
-            v-for="listing in listings"
+            v-for="listing in sortedListings"
             :key="listing._id"
             :listing="listing"
             :selected="selectedId === listing._id"
@@ -113,6 +134,79 @@
             @hover="selectedId = $event"
             @favorite-change="onFavoriteChange"
           />
+        </div>
+      </div>
+
+      <div v-show="view === 'table'" class="h-full overflow-y-auto p-4 md:p-6">
+        <div v-if="!loading && listings.length === 0" class="py-16 text-center text-sm text-muted-foreground">
+          No listings match your filters.
+        </div>
+        <div v-else class="mx-auto w-full max-w-6xl overflow-x-auto rounded-xl border border-border/60">
+          <table class="w-full border-collapse text-sm">
+            <thead>
+              <tr class="border-b border-border/60 bg-muted/40 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th class="px-4 py-3">Home</th>
+                <th class="px-4 py-3">Location</th>
+                <th class="px-4 py-3">Type</th>
+                <th class="whitespace-nowrap px-4 py-3">Beds / Baths</th>
+                <th class="whitespace-nowrap px-4 py-3 text-right">Sq Ft</th>
+                <th class="whitespace-nowrap px-4 py-3 text-right">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="listing in sortedListings"
+                :key="listing._id"
+                class="cursor-pointer border-b border-border/40 transition-colors last:border-0 hover:bg-muted/40"
+                :class="selectedId === listing._id && 'bg-primary/5'"
+                @mouseenter="selectedId = listing._id"
+                @click="goListing(listing._id)"
+              >
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="h-12 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
+                      <img
+                        v-if="listing.images?.[0]?.url"
+                        :src="listing.images[0].url"
+                        :alt="listing.title"
+                        class="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="truncate font-semibold">{{ listing.title }}</p>
+                      <p v-if="listing.communityName" class="truncate text-xs text-muted-foreground">
+                        {{ listing.communityName }}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                  {{ listing.city }}, {{ listing.state }}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3">
+                  <span
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide"
+                    :class="listing.status === 'SOLD'
+                      ? 'bg-deal/15 text-deal'
+                      : listing.listingType === 'RENT'
+                        ? 'bg-sky-600/15 text-sky-600'
+                        : 'bg-primary/15 text-primary'"
+                  >
+                    {{ listing.status === 'SOLD' ? 'Sold' : listing.listingType === 'RENT' ? 'Rent' : 'Sale' }}
+                  </span>
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                  {{ bedsBathsLabel(listing.beds, listing.baths) || '—' }}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-right tabular-nums text-muted-foreground">
+                  {{ listing.sqft ? listing.sqft.toLocaleString() : '—' }}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-right font-bold tabular-nums text-primary">
+                  {{ formatListingPrice(listing.priceCents, listing.listingType) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -141,16 +235,16 @@
           <div class="flex-1 space-y-5 overflow-y-auto p-4">
             <div>
               <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Transaction</p>
-              <div class="flex flex-wrap gap-2">
+              <div class="inline-flex w-full rounded-xl border border-border/60 bg-muted/30 p-1">
                 <button
                   v-for="opt in listingTypeOptions"
                   :key="opt.value"
                   type="button"
-                  class="rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
+                  class="flex-1 rounded-lg py-2 text-xs font-bold transition-colors"
                   :class="
                     filters.listingType === opt.value
-                      ? 'border-primary bg-primary text-white'
-                      : 'border-border text-muted-foreground hover:text-foreground'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
                   "
                   @click="filters.listingType = opt.value"
                 >
@@ -192,9 +286,57 @@
 
             <div>
               <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Price</p>
-              <div class="grid grid-cols-2 gap-2">
-                <Input v-model="filters.minPrice" type="number" min="0" placeholder="Min $" />
-                <Input v-model="filters.maxPrice" type="number" min="0" placeholder="Max $" />
+
+              <div class="price-histogram" aria-hidden="true">
+                <span
+                  v-for="(bar, i) in priceHistogram"
+                  :key="i"
+                  class="price-bar"
+                  :class="bar.active ? 'bg-primary' : 'bg-primary/20'"
+                  :style="{ height: bar.height + '%' }"
+                />
+              </div>
+
+              <div class="range-slider">
+                <div class="range-track" />
+                <div class="range-fill" :style="{ left: fillLeft + '%', right: fillRight + '%' }" />
+                <input
+                  type="range"
+                  class="range-input"
+                  :min="priceBounds.min"
+                  :max="priceBounds.max"
+                  :step="priceStep"
+                  :value="sliderMin"
+                  aria-label="Minimum price"
+                  @input="onSliderMin"
+                />
+                <input
+                  type="range"
+                  class="range-input"
+                  :min="priceBounds.min"
+                  :max="priceBounds.max"
+                  :step="priceStep"
+                  :value="sliderMax"
+                  aria-label="Maximum price"
+                  @input="onSliderMax"
+                />
+              </div>
+
+              <div class="mt-1 flex items-center justify-between text-[11px] font-medium text-muted-foreground">
+                <span>{{ formatBound(priceBounds.min) }}</span>
+                <span>{{ formatBound(priceBounds.max) }}+</span>
+              </div>
+
+              <div class="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <div class="relative">
+                  <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                  <Input v-model="filters.minPrice" type="number" min="0" placeholder="Min" class="pl-6" />
+                </div>
+                <span class="text-muted-foreground">–</span>
+                <div class="relative">
+                  <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                  <Input v-model="filters.maxPrice" type="number" min="0" placeholder="Max" class="pl-6" />
+                </div>
               </div>
             </div>
           </div>
@@ -214,7 +356,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { convex } from '@/lib/convex'
 import { api } from '@/lib/convex-generated'
-import { US_STATES } from '@/lib/listingFormat'
+import { US_STATES, formatListingPrice, bedsBathsLabel } from '@/lib/listingFormat'
 import { useUserStore } from '@/stores/user'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
@@ -231,17 +373,19 @@ const selectedId = ref<string | null>(null)
 const favoriteIds = ref(new Set<string>())
 const VIEW_STORAGE_KEY = 'mh-search-view'
 
-function readStoredView(): 'map' | 'list' {
+type SearchView = 'card' | 'table' | 'map'
+
+function readStoredView(): SearchView {
   try {
     const stored = localStorage.getItem(VIEW_STORAGE_KEY)
-    if (stored === 'list' || stored === 'map') return stored
+    if (stored === 'card' || stored === 'table' || stored === 'map') return stored
   } catch {
     // ignore
   }
-  return 'map'
+  return 'card'
 }
 
-const view = ref<'map' | 'list'>(readStoredView())
+const view = ref<SearchView>(readStoredView())
 const filtersOpen = ref(false)
 
 watch(view, (v) => {
@@ -254,9 +398,55 @@ watch(view, (v) => {
 
 const listingTypeOptions = [
   { value: '', label: 'All' },
-  { value: 'SALE', label: 'Sale' },
-  { value: 'RENT', label: 'Rent' },
+  { value: 'SALE', label: 'For sale' },
+  { value: 'RENT', label: 'For rent' },
 ]
+
+const sortOptions = [
+  { value: 'newest', label: 'Newest' },
+  { value: 'price_asc', label: 'Price: Low to High' },
+  { value: 'price_desc', label: 'Price: High to Low' },
+  { value: 'name_asc', label: 'Name: A to Z' },
+  { value: 'name_desc', label: 'Name: Z to A' },
+]
+
+const SORT_STORAGE_KEY = 'mh-search-sort'
+
+function readStoredSort(): string {
+  try {
+    const stored = localStorage.getItem(SORT_STORAGE_KEY)
+    if (stored && sortOptions.some((o) => o.value === stored)) return stored
+  } catch {
+    // ignore
+  }
+  return 'newest'
+}
+
+const sort = ref(readStoredSort())
+
+watch(sort, (v) => {
+  try {
+    localStorage.setItem(SORT_STORAGE_KEY, v)
+  } catch {
+    // ignore
+  }
+})
+
+const sortedListings = computed(() => {
+  const arr = [...listings.value]
+  switch (sort.value) {
+    case 'price_asc':
+      return arr.sort((a, b) => a.priceCents - b.priceCents)
+    case 'price_desc':
+      return arr.sort((a, b) => b.priceCents - a.priceCents)
+    case 'name_asc':
+      return arr.sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''))
+    case 'name_desc':
+      return arr.sort((a, b) => (b.title ?? '').localeCompare(a.title ?? ''))
+    default:
+      return arr
+  }
+})
 
 const assetTypeOptions = [
   { value: '', label: 'All' },
@@ -286,6 +476,81 @@ const activeFilterCount = computed(() => {
   if (filters.maxPrice) n += 1
   return n
 })
+
+const priceBounds = computed(() => {
+  const prices = listings.value
+    .map((l) => (l.priceCents ?? 0) / 100)
+    .filter((n) => Number.isFinite(n) && n > 0)
+  if (!prices.length) return { min: 0, max: 500000 }
+  const lo = Math.max(0, Math.floor(Math.min(...prices) / 5000) * 5000)
+  const hi = Math.ceil(Math.max(...prices) / 5000) * 5000
+  return { min: lo, max: hi > lo ? hi : lo + 5000 }
+})
+
+const priceStep = computed(() => {
+  const span = priceBounds.value.max - priceBounds.value.min
+  return Math.max(1000, Math.round(span / 100 / 1000) * 1000)
+})
+
+const sliderMin = computed(() =>
+  filters.minPrice ? Number(filters.minPrice) : priceBounds.value.min,
+)
+const sliderMax = computed(() =>
+  filters.maxPrice ? Number(filters.maxPrice) : priceBounds.value.max,
+)
+
+function onSliderMin(e: Event) {
+  const value = Number((e.target as HTMLInputElement).value)
+  const clamped = Math.min(value, sliderMax.value - priceStep.value)
+  filters.minPrice = clamped <= priceBounds.value.min ? '' : String(clamped)
+}
+
+function onSliderMax(e: Event) {
+  const value = Number((e.target as HTMLInputElement).value)
+  const clamped = Math.max(value, sliderMin.value + priceStep.value)
+  filters.maxPrice = clamped >= priceBounds.value.max ? '' : String(clamped)
+}
+
+const fillLeft = computed(() => {
+  const { min, max } = priceBounds.value
+  const span = max - min || 1
+  return ((sliderMin.value - min) / span) * 100
+})
+
+const fillRight = computed(() => {
+  const { min, max } = priceBounds.value
+  const span = max - min || 1
+  return ((max - sliderMax.value) / span) * 100
+})
+
+const priceHistogram = computed(() => {
+  const { min, max } = priceBounds.value
+  const buckets = 32
+  const span = max - min || 1
+  const counts = new Array(buckets).fill(0)
+  for (const l of listings.value) {
+    const price = (l.priceCents ?? 0) / 100
+    let idx = Math.floor(((price - min) / span) * buckets)
+    if (idx < 0) idx = 0
+    if (idx >= buckets) idx = buckets - 1
+    counts[idx] += 1
+  }
+  const peak = Math.max(1, ...counts)
+  return counts.map((c, i) => {
+    const bucketStart = min + (i / buckets) * span
+    const bucketEnd = min + ((i + 1) / buckets) * span
+    return {
+      height: c > 0 ? Math.max(8, (c / peak) * 100) : 4,
+      active: bucketEnd >= sliderMin.value && bucketStart <= sliderMax.value,
+    }
+  })
+})
+
+function formatBound(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`
+  if (n >= 1000) return `$${Math.round(n / 1000)}k`
+  return `$${n}`
+}
 
 async function loadFavoriteIds() {
   if (!userStore.user?.email) {
@@ -372,6 +637,10 @@ function onMapSelect(id: string) {
   selectedId.value = id
 }
 
+function goListing(id: string) {
+  void router.push(`/listings/${id}`)
+}
+
 function hydrateFromRoute() {
   filters.query = (route.query.q as string) ?? ''
   filters.listingType = (route.query.type as string) ?? ''
@@ -410,5 +679,91 @@ watch(
     hsl(280 70% 55%) 45%,
     hsl(25 90% 55%) 100%
   );
+}
+
+.price-histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 56px;
+  padding: 0 4px;
+  margin-bottom: 6px;
+}
+
+.price-bar {
+  flex: 1;
+  min-height: 3px;
+  border-radius: 2px 2px 0 0;
+  transition: background-color 0.15s ease;
+}
+
+.range-slider {
+  position: relative;
+  height: 20px;
+}
+
+.range-track {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 9999px;
+  background: hsl(var(--border));
+}
+
+.range-fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 9999px;
+  background: hsl(var(--primary));
+}
+
+.range-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.range-input::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid hsl(var(--primary));
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.range-input::-moz-range-thumb {
+  pointer-events: auto;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid hsl(var(--primary));
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.range-input::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.range-input::-moz-range-track {
+  background: transparent;
 }
 </style>
