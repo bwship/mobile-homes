@@ -8,6 +8,7 @@ A self-contained mobile & manufactured home listings platform forked from the Fe
 - **Backend**: Convex (auth, listings, organizations, favorites)
 - **Roles**: `ADMIN`, `SELLER` (dealers — post listings after approval), `BUYER` (browse & save)
 
+
 ## Quick start
 
 ```bash

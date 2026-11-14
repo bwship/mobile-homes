@@ -111,7 +111,7 @@
               :listing="selectedListing"
               :selected="true"
               variant="carousel"
-              :show-favorite="Boolean(userStore.user)"
+              show-favorite
               :favorited="favoriteIds.has(selectedListing._id)"
               @favorite-change="onFavoriteChange"
             />
@@ -129,7 +129,7 @@
             :key="listing._id"
             :listing="listing"
             :selected="selectedId === listing._id"
-            :show-favorite="Boolean(userStore.user)"
+            show-favorite
             :favorited="favoriteIds.has(listing._id)"
             @hover="selectedId = $event"
             @favorite-change="onFavoriteChange"

@@ -139,13 +139,6 @@
       </section>
     </div>
 
-    <AuthModal
-      :open="authModalOpen"
-      :initial-mode="authModalMode"
-      reason="You must be logged in to change market filters."
-      @close="authModalOpen = false"
-      @success="onAuthSuccess"
-    />
   </div>
 </template>
 
@@ -162,10 +155,11 @@ import ListingCarousel from '@/components/listings/ListingCarousel.vue'
 import RecentlyClosedSection, { type ClosedDealKind } from '@/components/listings/RecentlyClosedSection.vue'
 import TrendingThisWeek, { type TrendingData } from '@/components/listings/TrendingThisWeek.vue'
 import CompanyMarquee, { type MarqueeCompany } from '@/components/layout/CompanyMarquee.vue'
-import AuthModal from '@/components/auth/AuthModal.vue'
+import { useAuthModalStore } from '@/stores/authModal'
 
 const router = useRouter()
 const userStore = useUserStore()
+const authModal = useAuthModalStore()
 
 const query = ref('')
 const listingType = ref('')
@@ -176,10 +170,6 @@ const closedDealKind = ref<ClosedDealKind>('SALE')
 const closedLoading = ref(false)
 const trending = ref<TrendingData | null>(null)
 const loading = ref(true)
-
-const authModalOpen = ref(false)
-const authModalMode = ref<'login' | 'signup'>('login')
-const pendingMarket = ref<string | null>(null)
 
 const recentListings = computed(() => listings.value.slice(0, 12))
 const rentListings = computed(() => listings.value.filter((l) => l.listingType === 'RENT').slice(0, 10))
@@ -214,9 +204,17 @@ function requireAuthForMarket(state?: string) {
     })
     return
   }
-  pendingMarket.value = state ?? null
-  authModalMode.value = 'login'
-  authModalOpen.value = true
+  authModal.show({
+    mode: 'login',
+    title: 'Log in to browse markets',
+    reason: 'You must be logged in to change market filters.',
+    onSuccess: () => {
+      router.push({
+        path: '/search',
+        query: state ? { state } : undefined,
+      })
+    },
+  })
 }
 
 function goState(state: string) {
@@ -225,16 +223,6 @@ function goState(state: string) {
 
 function goAllMarkets() {
   requireAuthForMarket()
-}
-
-function onAuthSuccess() {
-  authModalOpen.value = false
-  const state = pendingMarket.value
-  pendingMarket.value = null
-  router.push({
-    path: '/search',
-    query: state ? { state } : undefined,
-  })
 }
 
 async function loadClosed() {

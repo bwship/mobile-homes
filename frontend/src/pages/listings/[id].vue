@@ -56,6 +56,27 @@
               <div class="flex flex-wrap items-center gap-2">
                 <h1 class="text-3xl font-bold">{{ listing.title }}</h1>
                 <button
+                  type="button"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                  :aria-label="favorited ? 'Remove from favorites' : 'Save to favorites'"
+                  :title="favorited ? 'Remove from favorites' : 'Save to favorites'"
+                  @click="toggleFavorite"
+                >
+                  <svg
+                    class="h-5 w-5 transition-colors"
+                    :class="favorited ? 'fill-red-500 text-red-500' : 'fill-none text-muted-foreground'"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"
+                    />
+                  </svg>
+                </button>
+                <button
                   v-if="canManage"
                   type="button"
                   class="inline-flex h-9 w-9 items-center justify-center rounded-full text-primary transition-colors hover:bg-primary/10"
@@ -114,28 +135,6 @@
                   {{ listing.organizationName }}
                 </router-link>
               </div>
-              <button
-                v-if="userStore.user"
-                type="button"
-                class="shrink-0 rounded-full p-2 transition-colors hover:bg-muted"
-                :aria-label="favorited ? 'Remove from favorites' : 'Save to favorites'"
-                :title="favorited ? 'Remove from favorites' : 'Save to favorites'"
-                @click="toggleFavorite"
-              >
-                <svg
-                  class="h-6 w-6 transition-colors"
-                  :class="favorited ? 'fill-red-500 text-red-500' : 'fill-none text-muted-foreground'"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"
-                  />
-                </svg>
-              </button>
             </div>
 
             <form
@@ -191,6 +190,7 @@ import { useUserStore } from '@/stores/user'
 import { useInboxStore } from '@/stores/inbox'
 import { useMessagesStore } from '@/stores/messages'
 import { useFavoritesStore } from '@/stores/favorites'
+import { useAuthModalStore } from '@/stores/authModal'
 import { formatListingPrice, formatLotRent, fullAddress } from '@/lib/listingFormat'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
@@ -203,6 +203,7 @@ const userStore = useUserStore()
 const inboxStore = useInboxStore()
 const messagesStore = useMessagesStore()
 const favoritesStore = useFavoritesStore()
+const authModal = useAuthModalStore()
 
 const listing = ref<any>(null)
 const loading = ref(true)
@@ -263,7 +264,11 @@ watch(
 )
 
 async function toggleFavorite() {
-  if (!userStore.user?.email || !listing.value) return
+  if (!listing.value) return
+  if (!userStore.user?.email) {
+    authModal.requireFavorites()
+    return
+  }
   const res = await convex.mutation(api.favorites.toggleFavorite, {
     userEmail: userStore.user.email,
     listingId: listing.value._id,

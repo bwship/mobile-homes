@@ -25,7 +25,7 @@
       <button
         v-if="showFavorite"
         type="button"
-        class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/90 shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
+        class="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/90 shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
         :aria-label="isFavorited ? 'Remove from favorites' : 'Save to favorites'"
         :disabled="favoriteBusy"
         @click.prevent.stop="onFavoriteClick"
@@ -81,6 +81,7 @@ import { convex } from '@/lib/convex'
 import { api } from '@/lib/convex-generated'
 import { useUserStore } from '@/stores/user'
 import { useFavoritesStore } from '@/stores/favorites'
+import { useAuthModalStore } from '@/stores/authModal'
 
 const props = withDefaults(
   defineProps<{
@@ -90,7 +91,7 @@ const props = withDefaults(
     showFavorite?: boolean
     favorited?: boolean
   }>(),
-  { variant: 'grid', showFavorite: false, favorited: false },
+  { variant: 'grid', showFavorite: true, favorited: false },
 )
 
 const emit = defineEmits<{
@@ -100,6 +101,7 @@ const emit = defineEmits<{
 
 const userStore = useUserStore()
 const favoritesStore = useFavoritesStore()
+const authModal = useAuthModalStore()
 const favoriteBusy = ref(false)
 const localFavorited = ref(props.favorited)
 
@@ -146,7 +148,11 @@ const badgeClass = computed(() => {
 })
 
 async function onFavoriteClick() {
-  if (!userStore.user?.email || favoriteBusy.value) return
+  if (favoriteBusy.value) return
+  if (!userStore.user?.email) {
+    authModal.requireFavorites()
+    return
+  }
   favoriteBusy.value = true
   try {
     const res = await convex.mutation(api.favorites.toggleFavorite, {

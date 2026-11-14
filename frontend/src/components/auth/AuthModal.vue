@@ -16,10 +16,13 @@
           <div>
             <BrandLogo show-wordmark size="sm" :tagline="false" class="mb-4" />
             <h2 class="text-xl font-extrabold tracking-tight">
-              {{ mode === 'login' ? 'Log in to change market' : 'Create your free account' }}
+              {{
+                title ||
+                (mode === 'login' ? 'Welcome back' : 'Create your free account')
+              }}
             </h2>
             <p class="mt-1.5 text-sm text-muted-foreground">
-              {{ reason || 'You must be logged in to change market filters.' }}
+              {{ reason || 'Log in to continue.' }}
             </p>
           </div>
           <button
@@ -153,10 +156,12 @@ const props = withDefaults(
     open: boolean
     initialMode?: 'login' | 'signup'
     reason?: string
+    title?: string | null
   }>(),
   {
     initialMode: 'login',
-    reason: 'You must be logged in to change market filters.',
+    reason: 'Log in to continue.',
+    title: null,
   },
 )
 

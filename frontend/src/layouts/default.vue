@@ -23,6 +23,14 @@
       <InboxDrawer v-if="userStore.user" />
     </div>
     <ImpersonateCommandDialog />
+    <AuthModal
+      :open="authModal.open"
+      :initial-mode="authModal.mode"
+      :reason="authModal.reason"
+      :title="authModal.title"
+      @close="authModal.hide()"
+      @success="onAuthSuccess"
+    />
   </SidebarProvider>
 </template>
 
@@ -33,10 +41,20 @@ import AppTopBar from '@/components/layout/AppTopBar.vue'
 import MobileSidebarDrawer from '@/components/layout/MobileSidebarDrawer.vue'
 import InboxDrawer from '@/components/layout/InboxDrawer.vue'
 import ImpersonateCommandDialog from '@/components/admin/ImpersonateCommandDialog.vue'
+import AuthModal from '@/components/auth/AuthModal.vue'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { useUserStore } from '@/stores/user'
+import { useAuthModalStore } from '@/stores/authModal'
+import { useFavoritesStore } from '@/stores/favorites'
 
 const route = useRoute()
 const userStore = useUserStore()
+const authModal = useAuthModalStore()
+const favoritesStore = useFavoritesStore()
 const isHome = computed(() => route.path === '/')
+
+function onAuthSuccess() {
+  authModal.handleSuccess()
+  void favoritesStore.refresh()
+}
 </script>
