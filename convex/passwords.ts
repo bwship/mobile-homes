@@ -1,6 +1,6 @@
 // Convex's TS config (lib: ["ES2020"]) doesn't include DOM / WebWorker, so
 // the global `crypto` and `btoa` / `atob` aren't typed. They're available at
-// runtime in the V8 isolate; we just need to declare them for the typecheck.
+// runtime in the V8 isolate; we just need to declare them for the typecheck
 declare const crypto: {
   subtle: {
     digest(algorithm: string, data: Uint8Array | ArrayBuffer): Promise<ArrayBuffer>;
