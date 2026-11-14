@@ -13,26 +13,53 @@
           </svg>
         </button>
 
-        <router-link to="/" class="flex min-w-0 shrink-0 items-center gap-2.5">
-          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-xs font-black text-white">
-            MH
-          </div>
-          <div class="min-w-0">
-            <div class="truncate text-sm font-extrabold leading-tight tracking-tight">MH Marketplace</div>
-            <div class="hidden truncate text-[10px] font-medium text-muted-foreground sm:block">
-              Homes for sale & rent
-            </div>
-          </div>
-        </router-link>
+        <BrandLogo to="/" show-wordmark class="min-w-0 shrink-0" />
 
         <PrimaryNav />
       </div>
 
       <div class="flex shrink-0 items-center gap-0.5 sm:gap-1">
+        <Tooltip text="Search" position="bottom">
+          <router-link
+            to="/search"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            :class="isSearchActive && 'bg-muted text-foreground'"
+            aria-label="Search"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z" />
+            </svg>
+          </router-link>
+        </Tooltip>
+
         <ThemeToggle />
+
         <template v-if="userStore.user">
           <transition name="header-icons">
-            <div v-show="!inboxStore.isOpen" class="flex items-center gap-0.5 sm:gap-1 lg:hidden">
+            <div v-show="!inboxStore.isOpen" class="flex items-center gap-0.5 sm:gap-1">
+              <Tooltip text="Favorites" position="bottom">
+                <router-link
+                  to="/favorites"
+                  class="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  :class="route.path.startsWith('/favorites') && 'bg-muted text-foreground'"
+                  aria-label="Favorites"
+                >
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"
+                    />
+                  </svg>
+                  <span
+                    v-if="favoritesStore.count > 0"
+                    class="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white"
+                  >
+                    {{ favoritesStore.count > 99 ? '99+' : favoritesStore.count }}
+                  </span>
+                </router-link>
+              </Tooltip>
+
               <Tooltip text="Notifications" position="bottom">
                 <button
                   type="button"
@@ -55,6 +82,7 @@
                   </span>
                 </button>
               </Tooltip>
+
               <Tooltip text="Messages" position="bottom">
                 <button
                   type="button"
@@ -79,19 +107,20 @@
               </Tooltip>
             </div>
           </transition>
+
+          <TopBarUserMenu />
         </template>
         <template v-else>
-          <div class="ml-1 flex items-center gap-2.5 text-sm">
+          <div class="ml-1.5 flex items-center gap-2 sm:gap-3">
             <router-link
               to="/login"
-              class="text-muted-foreground transition-colors hover:text-foreground"
+              class="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               Log in
             </router-link>
-            <span class="text-border">·</span>
             <router-link
               to="/signup"
-              class="font-medium text-primary transition-colors hover:brightness-110"
+              class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Sign up
             </router-link>
@@ -103,21 +132,31 @@
 </template>
 
 <script setup lang="ts">
-import { inject } from 'vue'
+import { computed, inject } from 'vue'
+import { useRoute } from 'vue-router'
+import BrandLogo from '@/components/BrandLogo.vue'
 import ThemeToggle from '@/components/layout/ThemeToggle.vue'
 import PrimaryNav from '@/components/layout/PrimaryNav.vue'
+import TopBarUserMenu from '@/components/layout/TopBarUserMenu.vue'
 import Tooltip from '@/components/ui/Tooltip.vue'
 import { SIDEBAR_KEY, type SidebarContext } from '@/components/ui/sidebar'
+import { useFavoritesStore } from '@/stores/favorites'
 import { useInboxStore } from '@/stores/inbox'
 import { useMessagesStore } from '@/stores/messages'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useUserStore } from '@/stores/user'
 
+const route = useRoute()
 const sidebar = inject(SIDEBAR_KEY) as SidebarContext
+const favoritesStore = useFavoritesStore()
 const inboxStore = useInboxStore()
 const messagesStore = useMessagesStore()
 const notificationsStore = useNotificationsStore()
 const userStore = useUserStore()
+
+const isSearchActive = computed(
+  () => route.path === '/search' || route.path.startsWith('/listings/'),
+)
 </script>
 
 <style scoped>

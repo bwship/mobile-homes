@@ -14,12 +14,7 @@
       >
         <div class="mb-6 flex items-start justify-between gap-3">
           <div>
-            <div class="mb-4 flex items-center gap-2">
-              <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-[10px] font-black text-white">
-                MH
-              </div>
-              <span class="text-sm font-extrabold tracking-tight">MH Marketplace</span>
-            </div>
+            <BrandLogo show-wordmark size="sm" :tagline="false" class="mb-4" />
             <h2 class="text-xl font-extrabold tracking-tight">
               {{ mode === 'login' ? 'Log in to change market' : 'Create your free account' }}
             </h2>
@@ -149,6 +144,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import BrandLogo from '@/components/BrandLogo.vue'
 import Input from '@/components/ui/Input.vue'
 import { friendlyAuthError } from '@/lib/authErrors'
 
