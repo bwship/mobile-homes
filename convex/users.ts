@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import {
   enrichUser,
   getUserByEmailDoc,
@@ -172,7 +173,7 @@ export const listAllUsers = query({
       const enriched = await enrichUser(ctx, user);
       let organizationName: string | undefined;
       if (enriched.organizationId) {
-        const org = await ctx.db.get(enriched.organizationId);
+        const org = await ctx.db.get(enriched.organizationId as Id<"organization">);
         organizationName = org?.name;
       }
       result.push({

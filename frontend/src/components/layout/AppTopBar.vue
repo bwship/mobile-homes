@@ -1,10 +1,10 @@
 <template>
   <header class="z-40 shrink-0 border-b border-border/60 bg-background/90 backdrop-blur-md">
     <div class="flex h-14 items-center justify-between gap-3 px-3 md:px-4">
-      <div class="flex min-w-0 items-center gap-2">
+      <div class="flex min-w-0 flex-1 items-center gap-2 lg:gap-4">
         <button
           type="button"
-          class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/60 md:hidden"
+          class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/60 lg:hidden"
           aria-label="Open menu"
           @click="sidebar?.toggleSidebar()"
         >
@@ -13,7 +13,7 @@
           </svg>
         </button>
 
-        <router-link to="/" class="flex min-w-0 items-center gap-2.5">
+        <router-link to="/" class="flex min-w-0 shrink-0 items-center gap-2.5">
           <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-xs font-black text-white">
             MH
           </div>
@@ -24,13 +24,15 @@
             </div>
           </div>
         </router-link>
+
+        <PrimaryNav />
       </div>
 
       <div class="flex shrink-0 items-center gap-0.5 sm:gap-1">
         <ThemeToggle />
         <template v-if="userStore.user">
           <transition name="header-icons">
-            <div v-show="!inboxStore.isOpen" class="flex items-center gap-0.5 sm:gap-1">
+            <div v-show="!inboxStore.isOpen" class="flex items-center gap-0.5 sm:gap-1 lg:hidden">
               <Tooltip text="Notifications" position="bottom">
                 <button
                   type="button"
@@ -103,6 +105,7 @@
 <script setup lang="ts">
 import { inject } from 'vue'
 import ThemeToggle from '@/components/layout/ThemeToggle.vue'
+import PrimaryNav from '@/components/layout/PrimaryNav.vue'
 import Tooltip from '@/components/ui/Tooltip.vue'
 import { SIDEBAR_KEY, type SidebarContext } from '@/components/ui/sidebar'
 import { useInboxStore } from '@/stores/inbox'

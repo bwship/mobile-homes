@@ -53,7 +53,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AuthPanel from '@/components/layout/AuthPanel.vue'
 import Input from '@/components/ui/Input.vue'
@@ -63,12 +63,15 @@ import { normalizeWebsiteUrl } from '@/lib/url'
 import { friendlyAuthError } from '@/lib/authErrors'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const name = ref('')
 const email = ref('')
 const password = ref('')
-const role = ref<'SELLER' | 'BUYER' | null>('BUYER')
+const role = ref<'SELLER' | 'BUYER' | null>(
+  route.query.role === 'SELLER' ? 'SELLER' : 'BUYER',
+)
 const organizationName = ref('')
 const organizationUrl = ref('')
 

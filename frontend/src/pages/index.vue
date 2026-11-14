@@ -63,7 +63,7 @@
       </Card>
 
       <!-- Market chips -->
-      <section v-if="topStates.length" class="mb-10 md:mb-14">
+      <section id="markets" v-if="topStates.length" class="mb-10 md:mb-14 scroll-mt-20">
         <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-muted-foreground">Browse by market</h2>
         <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
           <button
